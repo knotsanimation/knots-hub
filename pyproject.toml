@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "knots-hub"
+version = "0.1.0"
+description = ""
+authors = ["Liam Collod <lcollod@gmail.com>"]
+readme = "./README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8.1"
+tomli = "2.0"
+uv = "*"
+pythonning = { branch = "main", git = "https://github.com/knotsanimation/pythonning.git" }
+black = "*"
+
+[tool.poetry.extras]
+dev = ["black"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
