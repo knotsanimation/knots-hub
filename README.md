@@ -3,6 +3,10 @@
 The highest level software in the Knots studio pipeline. Used directly by
 artist to interract with the pipeline.
 
+> [!WARNING]
+> The hub only works on Windows yet but as been planned to include Linux 
+> support in the future.
+
 # design
 
 The hub wraps every other piece of software in use at Knots and ensure they

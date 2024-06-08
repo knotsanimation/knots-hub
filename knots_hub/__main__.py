@@ -6,6 +6,7 @@ from typing import Optional
 
 import knots_hub
 from knots_hub.constants import LOCAL_ROOT_FILESYSTEM
+from knots_hub.constants import OS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +53,9 @@ def main(argv: Optional[List[str]] = None):
     if initialized:
         LOGGER.debug(f"initialized filesystem '{LOCAL_ROOT_FILESYSTEM}'")
     LOGGER.debug(f"retrieved cli with args={cli._args}")
+
+    if not OS.is_windows():
+        raise OSError(f"Unsupported Operating System '{OS}'.")
 
     sys.exit(cli.execute())
 
