@@ -1,111 +1,22 @@
-import dataclasses
 import logging
-import os
 import shutil
 import tempfile
+import time
 from pathlib import Path
 
+import pythonning.filesystem
 from pythonning.benchmark import timeit
 
-from knots_hub.constants import Environ
-from knots_hub.constants import OS
-from knots_hub.constants import LOCAL_ROOT_FILESYSTEM
+from knots_hub.constants import INSTALLER_TEMP_DIR_PREFIX
+from .filesystem import HubInstallFilesystem
 from ._installer import install_python
 from ._installer import resolve_dependencies
 from ._installer import create_venv
 from ._installer import install_dependencies
 from ._installer import are_requirements_files_similar
+from .launchers import get_launcher_content
 
 LOGGER = logging.getLogger(__name__)
-
-
-class HubInstallFilesystem:
-    """
-    Represent the filestructure of a sucessfull hub installation.
-
-    All paths listed are guaranteed to exist on disk.
-    """
-
-    def __init__(self, root: Path):
-        self.root = root
-        # XXX: some paths are used by the launcher scripts, kept them synced !
-        self.venv_dir = root / ".venv"
-        self.python_dir = root / "python"
-        self.python_version_path = root / ".pythonversion"
-        self.requirements_path = root / "resolved-requirements.txt"
-        self.updating_dir = root / "__newupdate__"
-
-    @property
-    def updating_filesystem(self) -> "HubInstallFilesystem":
-        return HubInstallFilesystem(self.updating_dir)
-
-    @property
-    def python_bin_path(self) -> Path:
-        if OS.is_windows():
-            return self.python_dir / "python.exe"
-        else:
-            return self.python_dir / "bin" / "python"
-
-    @property
-    def python_version(self) -> str:
-        return self.python_version_path.read_text("utf-8")
-
-    @property
-    def is_updating(self) -> bool:
-        """
-        Returns:
-            True if the hub is being updated with new a new python environment.
-        """
-        return self.updating_filesystem.root.exists()
-
-    @classmethod
-    def from_local_root(cls) -> "HubInstallFilesystem":
-        return cls(root=LOCAL_ROOT_FILESYSTEM.install_dir)
-
-
-@dataclasses.dataclass
-class HubInstallConfig:
-    """
-    Options determining how the hub must be installed.
-    """
-
-    local_install_path: Path
-    requirements_path: Path
-    python_version: str
-
-    @classmethod
-    def from_environment(cls) -> "HubInstallConfig":
-        """
-        Generate an instance from environment variables.
-        """
-
-        kwargs_by_envvar = {
-            # keys are dataclass field names
-            # values are ("env var name", "env var value casting")
-            "local_install_path": (
-                Environ.USER_INSTALL_PATH,
-                Path,
-            ),
-            "requirements_path": (
-                Environ.INSTALLER_REQUIREMENTS_PATH,
-                Path,
-            ),
-            "python_version": (
-                Environ.PYTHON_VERSION,
-                str,
-            ),
-        }
-
-        kwargs = {}
-
-        for kwarg, config in kwargs_by_envvar.items():
-            envvar_name, casting = config
-            envvar = os.getenv(envvar_name)
-            if not envvar:
-                raise EnvironmentError(f"Missing '{envvar_name}' environment variable.")
-            kwargs[kwarg] = casting(envvar)
-
-        return HubInstallConfig(**kwargs)
 
 
 def _install_dependencies(
@@ -138,6 +49,24 @@ def _install_dependencies(
         )
 
 
+def create_temp_launcher(current_launcher_path: Path) -> Path:
+    """
+    Duplicate the given launcher at a temporary location.
+
+    We leave the user of this function responsability of cleaning the temp directory.
+
+    Args:
+        current_launcher_path: filesystem path to an existing launcher file.
+
+    Returns:
+        filesystem path to the new launcher file
+    """
+    tmpdir = Path(tempfile.mkdtemp(prefix=INSTALLER_TEMP_DIR_PREFIX))
+    new_launcher_path = tmpdir / current_launcher_path.name
+    shutil.copy(current_launcher_path, new_launcher_path)
+    return new_launcher_path
+
+
 def install_hub(
     local_install_path: Path,
     requirements_path: Path,
@@ -154,20 +83,21 @@ def install_hub(
     Returns:
         True if the hub was installed for the first time else False
     """
+    filesystem = HubInstallFilesystem(root=local_install_path)
     # check if hub is not already installed locally
-    if local_install_path.exists():
+    if filesystem.hubinstall_path.exists():
         return False
 
     # install to local system
     # we first install into a temp dir that can be easily destroyed on error, and then
     # copy it to the intended location.
 
-    with tempfile.TemporaryDirectory(prefix="knots_hub_installer_") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix=INSTALLER_TEMP_DIR_PREFIX) as tmpdir:
         filesystem = HubInstallFilesystem(root=Path(tmpdir))
 
         python_version = python_version
 
-        LOGGER.info(f"writting '{filesystem.python_version_path}'")
+        LOGGER.info(f"writing '{filesystem.python_version_path}'")
         filesystem.python_version_path.write_text(python_version, "utf-8")
 
         LOGGER.info(f"installing python-{python_version} to '{filesystem.python_dir}'")
@@ -186,13 +116,41 @@ def install_hub(
             dst_requirements_path=filesystem.requirements_path,
         )
 
+        install_hub_launcher(filesystem.launcher_path)
+
+        LOGGER.info(f"writing '{filesystem.hubinstall_path}'")
+        filesystem.hubinstall_path.write_text(str(time.time()), "utf-8")
+
         if dryrun:
             return True
 
-        LOGGER.info(f"copying installation from temp dir to user location")
-        with timeit("copying took ", LOGGER.debug):
-            shutil.copytree(tmpdir, local_install_path)
+        LOGGER.info(f"moving installation from temp dir to user location")
+        with timeit("installation move took ", LOGGER.debug):
+            pythonning.filesystem.move_directory_content(
+                Path(tmpdir), local_install_path
+            )
 
+    return True
+
+
+def install_hub_launcher(launcher_path: Path) -> bool:
+    """
+    Create the hub's launcher if it doesn't exist.
+
+    The launcher path is OS-dependent.
+
+    Args:
+        launcher_path: filesystem path to a file that might exist.
+
+    Returns:
+        True if the launcher was installed for the first time else False
+    """
+    if launcher_path.exists():
+        return False
+
+    launcher_content = get_launcher_content()
+    LOGGER.info(f"writing '{launcher_path}'")
+    launcher_path.write_text(launcher_content, "utf-8")
     return True
 
 

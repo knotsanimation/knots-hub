@@ -24,6 +24,18 @@ class Environ:
     Full version of the python interpreter to install for the hub.
     """
 
+    TERMINAL_WINDOWS = f"{_ENVPREFIX}_TERMINAL_WINDOWS"
+    TERMINAL_LINUX = f"{_ENVPREFIX}_TERMINAL_LINUX"
+
+    # XXX: keep in sync with launcher scripts
+
+    _LAUNCHERENVPREFIX = "_KNOTSHUBLAUNCHER"
+
+    LAUNCHER_UPDATE_CWD = f"{_LAUNCHERENVPREFIX}_UPDATE_CWD"
+    """
+    When restarted, ask the launcher script to perform an update of the installation using this current working directory.
+    """
+
 
 class OS:
     """
@@ -55,39 +67,4 @@ class OS:
 _MODULE_PATH = Path(knots_hub.__file__).parent
 
 
-def _LOCAL_ROOT_PATH():
-    if OS.is_windows():
-        return Path(os.environ["LOCALAPPDATA"]) / "knots_hub"
-    else:
-        return Path("/etc", "knots_hub")
-
-
-LOCAL_ROOT_PATH: Path = _LOCAL_ROOT_PATH()
-"""
-Filesystem path to a directory on the user local system that might be created with 
-mkdir and used to store any data needed by the hub.
-"""
-
-
-class LocalRootFilesystem:
-    def __init__(self, root: Path):
-        self.root = root
-        self.log_path = root / "hub.log"
-        self.install_dir = root / ".install"
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.root})"
-
-    def initialize(self) -> bool:
-        """
-        Returns:
-            True if the filesystem needed tobe initialized else False.
-        """
-        if not self.root.exists():
-            self.root.mkdir()
-            return True
-
-        return False
-
-
-LOCAL_ROOT_FILESYSTEM: LocalRootFilesystem = LocalRootFilesystem(LOCAL_ROOT_PATH)
+INSTALLER_TEMP_DIR_PREFIX = "knots_hub_installer_"

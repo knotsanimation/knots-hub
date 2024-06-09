@@ -5,7 +5,6 @@ from typing import List
 from typing import Optional
 
 import knots_hub
-from knots_hub.constants import LOCAL_ROOT_FILESYSTEM
 from knots_hub.constants import OS
 
 LOGGER = logging.getLogger(__name__)
@@ -16,7 +15,12 @@ def main(argv: Optional[List[str]] = None):
     Args:
         argv: command line arguments. from sys.argv if not provided
     """
-    cli = knots_hub.get_cli(argv=argv)
+
+    config = knots_hub.HubConfig.from_environment()
+    filesystem = knots_hub.HubInstallFilesystem(root=config.local_install_path)
+    filesystem.root.mkdir(exist_ok=True)
+
+    cli = knots_hub.get_cli(argv=argv, config=config, filesystem=filesystem)
 
     log_level = logging.DEBUG if cli.debug else logging.INFO
 
@@ -33,25 +37,17 @@ def main(argv: Optional[List[str]] = None):
     logging.root.addHandler(handler)
 
     handler = logging.handlers.RotatingFileHandler(
-        LOCAL_ROOT_FILESYSTEM.log_path,
+        filesystem.log_path,
         maxBytes=65536,
         # need at least one backup to rotate
         backupCount=1,
         encoding="utf-8",
-        # the parent directory might not be created yet so delay
-        delay=True,
     )
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(formatter)
     logging.root.addHandler(handler)
 
-    initialized = LOCAL_ROOT_FILESYSTEM.initialize()
-
-    # it is now possible to log
-
     LOGGER.debug(f"starting {knots_hub.__name__} v{knots_hub.__version__}")
-    if initialized:
-        LOGGER.debug(f"initialized filesystem '{LOCAL_ROOT_FILESYSTEM}'")
     LOGGER.debug(f"retrieved cli with args={cli._args}")
 
     if not OS.is_windows():
