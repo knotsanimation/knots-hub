@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "knots-hub"
 version = "0.1.0"
-description = ""
+description = "Entry point tool to access Knots pipeline."
 authors = ["Liam Collod <lcollod@gmail.com>"]
 readme = "./README.md"
 
@@ -12,9 +12,10 @@ uv = "*"
 pythonning = { branch = "main", git = "https://github.com/knotsanimation/pythonning.git" }
 black = "*"
 pytest = "*"
+nuitka = "2.2"
 
 [tool.poetry.extras]
-dev = ["black"]
+dev = ["black", "nuitka"]
 test = ["pytest"]
 
 [build-system]
