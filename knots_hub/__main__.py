@@ -6,6 +6,7 @@ from typing import Optional
 
 import knots_hub
 from knots_hub.constants import OS
+from knots_hub.constants import IS_APP_FROZEN
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +48,9 @@ def main(argv: Optional[List[str]] = None):
     handler.setFormatter(formatter)
     logging.root.addHandler(handler)
 
-    LOGGER.debug(f"starting {knots_hub.__name__} v{knots_hub.__version__}")
+    LOGGER.debug(
+        f"starting {knots_hub.__name__} v{knots_hub.__version__} (frozen={IS_APP_FROZEN})"
+    )
     LOGGER.debug(f"retrieved cli with args={cli._args}")
 
     if not OS.is_windows():

@@ -1,6 +1,4 @@
-import os
 import sys
-from pathlib import Path
 
 import knots_hub
 
@@ -13,27 +11,10 @@ class Environ:
     Filesystem path to the location on the user system where the hub is installed.
     """
 
-    INSTALLER_REQUIREMENTS_PATH = f"{_ENVPREFIX}_INSTALLER_REQUIREMENTS_PATH"
+    INSTALLER_LIST_PATH = f"{_ENVPREFIX}_INSTALLER_LIST"
     """
-    Filesystem path to an existing requirements.txt file that is used to determine the
-    dependencies required to keep the hub up-to-date.
-    """
-
-    PYTHON_VERSION = f"{_ENVPREFIX}_PYTHON_VERSION"
-    """
-    Full version of the python interpreter to install for the hub.
-    """
-
-    TERMINAL_WINDOWS = f"{_ENVPREFIX}_TERMINAL_WINDOWS"
-    TERMINAL_LINUX = f"{_ENVPREFIX}_TERMINAL_LINUX"
-
-    # XXX: keep in sync with launcher scripts
-
-    _LAUNCHERENVPREFIX = "_KNOTSHUBLAUNCHER"
-
-    LAUNCHER_UPDATE_CWD = f"{_LAUNCHERENVPREFIX}_UPDATE_CWD"
-    """
-    When restarted, ask the launcher script to perform an update of the installation using this current working directory.
+    Filesystem path to an existing json file which list all the hub version available
+    with an associated path for download.
     """
 
 
@@ -64,7 +45,15 @@ class OS:
         return cls._current in ("win32", "cygwin")
 
 
-_MODULE_PATH = Path(knots_hub.__file__).parent
+EXECUTABLE_NAME = f"{knots_hub.__name__}-v{knots_hub.__version__}"
+"""
+Name to give to the packaged executable, without the file extension.
+"""
 
+# https://nuitka.net/user-documentation/tips.html#detecting-nuitka-at-run-time
+_IS_PACKAGED_NUITKA = hasattr(knots_hub, "__compiled__")
 
-INSTALLER_TEMP_DIR_PREFIX = "knots_hub_installer_"
+IS_APP_FROZEN = _IS_PACKAGED_NUITKA
+"""
+Find if the current runtime is a packaged executable.
+"""

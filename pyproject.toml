@@ -11,9 +11,11 @@ tomli = "2.0"
 uv = "*"
 pythonning = { branch = "main", git = "https://github.com/knotsanimation/pythonning.git" }
 black = "*"
+pytest = "*"
 
 [tool.poetry.extras]
 dev = ["black"]
+test = ["pytest"]
 
 [build-system]
 requires = ["poetry-core"]

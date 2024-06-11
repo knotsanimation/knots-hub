@@ -17,8 +17,7 @@ of our major need being to go local-first when possible. Our network infratructu
 being pretty minimal we defer of storing as much software possible on the user
 local machine to avoid reducing performances.
 
-The hub is reponsible of bootstrapping himself on user machine and installing
-any dependency needed. It however needs to be packaged as an self-sufficient 
-executable first by a developer, shared on the network to be executed a first 
-time by the users. That first execution will install it on the user machine,
-and from then the local installation will self-update itself as needed.
+The hub is reponsible of installing himself on the user machine, using
+pre-compiled executable provided arbitrarly. We could have used a seperate
+installer and the hub but to reduce maintenance they are both combined in 
+the same code.

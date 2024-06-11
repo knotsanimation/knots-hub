@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from knots_hub.constants import EXECUTABLE_NAME
 from knots_hub.constants import OS
 
 LOGGER = logging.getLogger(__name__)
@@ -19,61 +20,25 @@ class HubInstallFilesystem:
 
     def __init__(self, root: Path):
         self.root = root
-        # XXX: some paths are used by the launcher scripts, kept them synced !
-        self.venv_dir = root / ".venv"
-        self.python_dir = root / "python"
-        self.updating_dir = root / "__newupdate__"
+        self.install_old_dir = root / "install-old"
+        self.install_src_dir = root / "install-src"
+        self.install_new_dir = root / "install-new"
         # note: logs are rotated so there might be multiple of those
         self.log_path = root / "hub.log"
-        self.launcher_win_path = root / "hub-launcher.ps1"
-        self.launcher_linux_path = root / "hub-launcher.sh"
-        self.python_version_path = root / ".pythonversion"
         self.hubinstall_path = root / ".hubinstall"
-        self.requirements_path = root / "resolved-requirements.txt"
 
-    @property
-    def updating_filesystem(self) -> "HubInstallFilesystem":
-        """
-        Filesystem for the new update.
-
-        Ensure there is a new update existing before using this property.
-        """
-        return HubInstallFilesystem(self.updating_dir)
-
-    @property
-    def launcher_path(self) -> Path:
-        """
-        Path to the launcher script depending on the current OS.
-        """
         if OS.is_windows():
-            return self.launcher_win_path
+            executable_filename = f"{EXECUTABLE_NAME}.exe"
         else:
-            return self.launcher_linux_path
+            executable_filename = f"{EXECUTABLE_NAME}"
+
+        self.exe_old = self.install_old_dir / executable_filename
+        self.exe_src = self.install_src_dir / executable_filename
+        self.exe_new = self.install_new_dir / executable_filename
 
     @property
-    def python_bin_path(self) -> Path:
-        """
-        Path of the python interepeter executable depending on the current OS.
-        """
-        if OS.is_windows():
-            return self.python_dir / "python.exe"
-        else:
-            return self.python_dir / "bin" / "python"
-
-    @property
-    def python_version(self) -> str:
-        """
-        The full python version of the python interpeter installed.
-        """
-        return self.python_version_path.read_text("utf-8")
-
-    @property
-    def is_updating(self) -> bool:
-        """
-        Returns:
-            True if the hub is being updated with new a new python environment.
-        """
-        return self.updating_filesystem.root.exists()
+    def is_installed(self) -> bool:
+        return self.hubinstall_path.exists()
 
     @property
     def installed_time(self) -> Optional[float]:

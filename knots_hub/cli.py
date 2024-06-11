@@ -1,9 +1,8 @@
 import abc
 import argparse
-import copy
 import logging
 import os
-import subprocess
+import shutil
 import sys
 from typing import List
 from typing import Type
@@ -13,11 +12,47 @@ from pythonning.benchmark import timeit
 import knots_hub
 from knots_hub import HubInstallFilesystem
 from knots_hub import HubConfig
-from knots_hub.constants import Environ
-from knots_hub.constants import OS
-from knots_hub._terminal import get_terminal_for_script
+import knots_hub.installer
+from knots_hub.installer import InstallerList
 
 LOGGER = logging.getLogger(__name__)
+
+
+def get_restart_args(
+    current_argv: List[str],
+    restarted_amount: int = 0,
+    apply_update: int = 0,
+) -> List[str]:
+    """
+    Get the args to pass to ``os.exec*``
+    """
+    argv = ["knots_hub"]  # program name expected by os.exec*
+    argv += ["--restarted__", str(restarted_amount + 1)]
+
+    new_argv = current_argv.copy()
+
+    if "__applyupdate" in new_argv:
+        applyupdate_index = new_argv.index("__applyupdate")
+        if apply_update:
+            # imply usually the restart called at applyupdate stage 1
+            new_argv.pop(applyupdate_index + 1)
+            new_argv.insert(applyupdate_index + 1, str(apply_update))
+        else:
+            # imply usually the restart called at applyupdate stage 2
+            new_argv.pop(applyupdate_index)
+            new_argv.pop(applyupdate_index)
+
+    elif apply_update:
+        new_argv = ["__applyupdate", str(apply_update)] + new_argv
+
+    if "--restarted__" in new_argv:
+        index = new_argv.index("--restarted__")
+        # remove the arg and its value
+        new_argv.pop(index)
+        new_argv.pop(index)
+
+    argv += new_argv
+    return argv
 
 
 class BaseParser:
@@ -33,12 +68,16 @@ class BaseParser:
     def __init__(
         self,
         args: argparse.Namespace,
+        original_argv: List[str],
         config: HubConfig,
         filesystem: HubInstallFilesystem,
+        extra_args: List[str],
     ):
         self._args: argparse.Namespace = args
+        self._original_argv = original_argv
         self._filesystem = filesystem
         self._config = config
+        self._extra_args = extra_args
 
     @property
     def debug(self) -> bool:
@@ -48,13 +87,6 @@ class BaseParser:
         return self._args.debug
 
     @property
-    def dryrun(self) -> bool:
-        """
-        True to run the app as much as possible without writing anything to disk.
-        """
-        return self._args.dryrun
-
-    @property
     def _restarted(self) -> int:
         """
         True if the app has been call has a restarted session.
@@ -62,15 +94,6 @@ class BaseParser:
         Only intended to be used internally.
         """
         return self._args._restarted
-
-    @property
-    def _force_restart(self) -> bool:
-        """
-        Force the app to restart even if it needs no updating.
-
-        Only intended to be used internally.
-        """
-        return self._args._force_restart
 
     @abc.abstractmethod
     def execute(self):
@@ -90,83 +113,42 @@ class BaseParser:
             help=cls.debug.__doc__,
         )
         parser.add_argument(
-            "--dryrun",
-            action="store_true",
-            help=cls.dryrun.__doc__,
-        )
-        parser.add_argument(
             "--restarted__",
             dest="_restarted",
             default=0,
             type=int,
-            help=cls._restarted.__doc__,
-        )
-        parser.add_argument(
-            "--force_restart__",
-            dest="_force_restart",
-            action="store_true",
-            help=cls._force_restart.__doc__,
+            help=argparse.SUPPRESS,
         )
         parser.set_defaults(func=cls)
 
-    def _restart_local_app(self, need_update=False):
+    def _restart_hub(self, exe: str, apply_update: int = 0):
         """
-        Always restart to the locally installed hub, no matter if the current runtime is from
-        somewhere else.
+        ! Anything after this function is not called.
 
         Args:
-            need_update:
-                if True we duplicate the launcher to a temporary location so
-                the hub can be updated without file access restrictions.
+            exe: filesystem path to an existing hub executable
+            apply_update: which stage of update to apply on restart
         """
-        # safety to prevent an unlimited loop of restart that might happen
-        if self._restarted >= 3:
+        # safety to prevent an unlimited loop of restart.
+        # not that it might happen but we never know
+        if self._restarted > 3:
             raise RuntimeError(
-                "Prevented a fourth restart of the system which is not normal."
-                "Investigate the logs to find why."
+                "Prevented a fourth restart leading to a probable infinite recursion."
+                "Investigate the logs to find the cause."
             )
 
-        filesystem = self._filesystem  # alias for shorter lines
+        current_argv = self._original_argv.copy()
+        argv = get_restart_args(
+            current_argv=current_argv,
+            restarted_amount=self._restarted,
+            apply_update=apply_update,
+        )
 
-        launcher = filesystem.launcher_path
-        if need_update:
-            # XXX: this create a temp directory that we don't clean.
-            #  We leave it up to the OS to clean it.
-            launcher = knots_hub.installer.create_temp_launcher(
-                filesystem.launcher_path
-            )
-
-        terminal_command = get_terminal_for_script(script_path=launcher)
-        exe = terminal_command.pop(0)
-
-        argv = ["knots_hub"]  # program name expected by os.execl
-        argv += terminal_command
-        argv += ["--restarted__", str(self._restarted + 1)]
-
-        current_argv = sys.argv.copy()[1:]
-        if "--restarted__" in current_argv:
-            index = current_argv.index("--restarted__")
-            # remove the arg and its value
-            current_argv.pop(index)
-            current_argv.pop(index)
-        if "--force_restart__" in current_argv:
-            current_argv.remove("--force_restart__")
-
-        argv += current_argv
-
-        environ = os.environ.copy()
-
-        if need_update:
-            environ[Environ.LAUNCHER_UPDATE_CWD] = str(filesystem.root)
-            # we will need to restart even if the launcher doesn't need upgrading,
-            # so we use back the locally installed launcher instead of the temp launcher
-            argv += ["--force_restart__"]
-
+        LOGGER.info(f"restarting hub '{exe}' ...")
         # safety mentioned in the doc
         sys.stdout.flush()
-        # restart
-        LOGGER.debug(f"os.execve({exe},*{argv},{environ})")
-        os.execve(exe, argv, environ)
+        LOGGER.debug(f"os.execv({exe},{argv})")
+        os.execv(exe, argv)
 
 
 class _Parser(BaseParser):
@@ -174,62 +156,95 @@ class _Parser(BaseParser):
     Parser executed when no subcommand is provided.
     """
 
-    @abc.abstractmethod
     def execute(self):
 
-        local_install_path = self._config.local_install_path
-        requirements_path = self._config.requirements_path
-        python_version = self._config.python_version
+        # an empty installer list imply the hub is never installed/updated locally
+        installer_list = None
+        installer_list_path = self._config.installer_list_path
+        if installer_list_path:
+            installer_list = InstallerList.from_file(path=installer_list_path)
 
-        # 1. check if local install is required
+        # check installed
+        if installer_list and not self._filesystem.is_installed:
+            src_path = installer_list.last_path
+            LOGGER.info(f"installing hub '{src_path}'")
+            with timeit("installing took ", LOGGER.info):
+                exe_path = knots_hub.installer.install_hub(
+                    install_src_path=src_path,
+                    filesystem=self._filesystem,
+                )
+            sys.exit(self._restart_hub(exe=str(exe_path)))
 
-        with timeit("hub installation took ", LOGGER.info):
-            installed = knots_hub.installer.install_hub(
-                local_install_path=local_install_path,
-                requirements_path=requirements_path,
-                python_version=python_version,
-                dryrun=self.dryrun,
-            )
-        if installed:
-            LOGGER.info("restarting app ...")
-            self._restart_local_app()
-            return
+        # finalize update that took place previously
+        if self._filesystem.install_old_dir.exists():
+            old_dir = self._filesystem.install_old_dir
+            LOGGER.debug(f"shutil.rmtree('{old_dir}')")
+            shutil.rmtree(old_dir)
 
-        # 2. check if local update required
+        # check up-to-date (only if there was no "old-dir" which implied an update all-ready just occurred.)
+        elif not knots_hub.installer.is_hub_up_to_date(installer_list):
+            src_path = installer_list.last_path
+            LOGGER.info(f"updating hub to '{src_path}'")
+            with timeit("updating took ", LOGGER.info):
+                exe_path = knots_hub.installer.update_hub(
+                    update_src_path=src_path,
+                    filesystem=self._filesystem,
+                )
+            sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
 
-        with timeit("hub updating took ", LOGGER.info):
-            updated = knots_hub.installer.update_hub(
-                local_install_path=local_install_path,
-                requirements_path=requirements_path,
-                python_version=python_version,
-            )
-        if updated:
-            LOGGER.info("restarting app ...")
-            self._restart_local_app(need_update=True)
-            return
+        if self._extra_args:
+            raise ValueError("Extra arguments are not supported for this command.")
 
-        # 3. check if launcher need to be updated
-        with timeit("hub launcher updating took ", LOGGER.info):
-            updated = knots_hub.installer.install_hub_launcher(
-                launcher_path=self._filesystem.launcher_path,
-            )
-        if updated:
-            LOGGER.info("restarting app ...")
-            self._restart_local_app()
-            return
-
-        if self._force_restart:
-            LOGGER.info("restarting app ...")
-            self._restart_local_app()
-            return
-
-        # we can assume we are in a powershell context
-        if OS.is_windows():
-            print("hello world !")
+        print("hub launched !")
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
         super().add_to_parser(parser)
+
+
+class ApplyUpdateParser(BaseParser):
+    """
+    An "applyupdate" sub-command which is only intended to be used internally.
+
+    XXX: logic/api modification need to be propagated in `get_restart_args`
+    """
+
+    @property
+    def stage(self) -> int:
+        """
+        The stage at which the update must be applied (updates are 2 stages process).
+        """
+        return self._args.stage
+
+    def execute(self):
+        if self.stage == 1:
+            LOGGER.info("applying update stage 1")
+            old_path = self._filesystem.install_src_dir
+            new_path = self._filesystem.install_old_dir
+            LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
+            old_path.rename(new_path)
+
+            exe = str(self._filesystem.exe_old)
+            sys.exit(self._restart_hub(exe=exe, apply_update=2))
+
+        if self.stage == 2:
+            LOGGER.info("applying update stage 2")
+            old_path = self._filesystem.install_new_dir
+            new_path = self._filesystem.install_src_dir
+            LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
+            old_path.rename(new_path)
+
+            exe = str(self._filesystem.exe_src)
+            sys.exit(self._restart_hub(exe=exe))
+
+    @classmethod
+    def add_to_parser(cls, parser: argparse.ArgumentParser):
+        super().add_to_parser(parser)
+        parser.add_argument(
+            "stage",
+            type=int,
+            help=cls.stage.__doc__,
+        )
 
 
 class UninstallParser(BaseParser):
@@ -248,7 +263,7 @@ class UninstallParser(BaseParser):
 def get_cli(
     config: HubConfig,
     filesystem: HubInstallFilesystem,
-    argv=None,
+    argv: List[str] = None,
 ) -> BaseParser:
     """
     Return the command line interface generated from user arguments provided.
@@ -266,17 +281,26 @@ def get_cli(
     subparsers = parser.add_subparsers(required=False)
 
     subparser = subparsers.add_parser(
+        "__applyupdate",
+        add_help=False,
+    )
+    ApplyUpdateParser.add_to_parser(subparser)
+
+    subparser = subparsers.add_parser(
         "uninstall",
         description="Uninstall the hub from the user system.",
     )
     UninstallParser.add_to_parser(subparser)
 
-    argv: List[str] = copy.copy(argv) or sys.argv[1:]
-    args = parser.parse_args(argv)
+    argv: List[str] = sys.argv[1:] if argv is None else argv.copy()
+    # allow unknown args for when we restart with `applyupdate`
+    args, extra_args = parser.parse_known_args(argv)
     cli_class: Type[BaseParser] = args.func
     instance: BaseParser = cli_class(
         args=args,
+        original_argv=argv,
         config=config,
         filesystem=filesystem,
+        extra_args=extra_args,
     )
     return instance
