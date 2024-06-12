@@ -7,6 +7,7 @@ import sys
 from typing import List
 from typing import Type
 
+import kloch
 from pythonning.benchmark import timeit
 
 import knots_hub
@@ -100,7 +101,39 @@ class BaseParser:
         """
         Arbitrary code that must be executed when the user ask this command.
         """
-        raise NotImplementedError()
+        # an empty installer list imply the hub is never installed/updated locally
+        installer_list = None
+        installer_list_path = self._config.installer_list_path
+        if installer_list_path:
+            installer_list = InstallerList.from_file(path=installer_list_path)
+
+        # check installed
+        if installer_list and not self._filesystem.is_installed:
+            src_path = installer_list.last_path
+            LOGGER.info(f"installing hub '{src_path}'")
+            with timeit("installing took ", LOGGER.info):
+                exe_path = knots_hub.installer.install_hub(
+                    install_src_path=src_path,
+                    filesystem=self._filesystem,
+                )
+            sys.exit(self._restart_hub(exe=str(exe_path)))
+
+        # finalize update that took place previously
+        if self._filesystem.install_old_dir.exists():
+            old_dir = self._filesystem.install_old_dir
+            LOGGER.debug(f"shutil.rmtree('{old_dir}')")
+            shutil.rmtree(old_dir)
+
+        # check up-to-date (only if there was no "old-dir" which implied an update all-ready just occurred.)
+        elif not knots_hub.installer.is_hub_up_to_date(installer_list):
+            src_path = installer_list.last_path
+            LOGGER.info(f"updating hub to '{src_path}'")
+            with timeit("updating took ", LOGGER.info):
+                exe_path = knots_hub.installer.update_hub(
+                    update_src_path=src_path,
+                    filesystem=self._filesystem,
+                )
+            sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
@@ -158,44 +191,34 @@ class _Parser(BaseParser):
 
     def execute(self):
 
-        # an empty installer list imply the hub is never installed/updated locally
-        installer_list = None
-        installer_list_path = self._config.installer_list_path
-        if installer_list_path:
-            installer_list = InstallerList.from_file(path=installer_list_path)
-
-        # check installed
-        if installer_list and not self._filesystem.is_installed:
-            src_path = installer_list.last_path
-            LOGGER.info(f"installing hub '{src_path}'")
-            with timeit("installing took ", LOGGER.info):
-                exe_path = knots_hub.installer.install_hub(
-                    install_src_path=src_path,
-                    filesystem=self._filesystem,
-                )
-            sys.exit(self._restart_hub(exe=str(exe_path)))
-
-        # finalize update that took place previously
-        if self._filesystem.install_old_dir.exists():
-            old_dir = self._filesystem.install_old_dir
-            LOGGER.debug(f"shutil.rmtree('{old_dir}')")
-            shutil.rmtree(old_dir)
-
-        # check up-to-date (only if there was no "old-dir" which implied an update all-ready just occurred.)
-        elif not knots_hub.installer.is_hub_up_to_date(installer_list):
-            src_path = installer_list.last_path
-            LOGGER.info(f"updating hub to '{src_path}'")
-            with timeit("updating took ", LOGGER.info):
-                exe_path = knots_hub.installer.update_hub(
-                    update_src_path=src_path,
-                    filesystem=self._filesystem,
-                )
-            sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
-
         if self._extra_args:
-            raise ValueError("Extra arguments are not supported for this command.")
+            raise ValueError(
+                f"Extra arguments not supported for the command {self._original_argv}"
+            )
 
-        print("hub launched !")
+        super().execute()
+        print("hub launched")
+
+    @classmethod
+    def add_to_parser(cls, parser: argparse.ArgumentParser):
+        super().add_to_parser(parser)
+
+
+class KlochParser(BaseParser):
+    """
+    A "kloch" subcommand, to start the kloch CLI.
+    """
+
+    def execute(self):
+        super().execute()
+        # plugins added in pyproject.toml
+        os.environ["KLOCH_CONFIG_LAUNCHER_PLUGINS"] = "kloch_rezenv,kloch_kiche"
+
+        argv = self._extra_args + (["--debug"] if self.debug else [])
+        LOGGER.debug(f"using {kloch.__name__} v{kloch.__version__}")
+        LOGGER.debug(f"kloch.get_cli({argv})")
+        cli = kloch.get_cli(argv=argv)
+        cli.execute()
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
@@ -279,6 +302,13 @@ def get_cli(
     )
     _Parser.add_to_parser(parser)
     subparsers = parser.add_subparsers(required=False)
+
+    subparser = subparsers.add_parser(
+        "kloch",
+        add_help=False,
+        description="Call the Kloch CLI with all arguments redirected to it.",
+    )
+    KlochParser.add_to_parser(subparser)
 
     subparser = subparsers.add_parser(
         "__applyupdate",
