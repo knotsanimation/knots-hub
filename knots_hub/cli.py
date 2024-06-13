@@ -14,7 +14,7 @@ import knots_hub
 from knots_hub import HubInstallFilesystem
 from knots_hub import HubConfig
 import knots_hub.installer
-from knots_hub.installer import InstallerList
+from knots_hub.installer import HubInstallersList
 
 LOGGER = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class BaseParser:
         installer_list = None
         installer_list_path = self._config.installer_list_path
         if installer_list_path:
-            installer_list = InstallerList.from_file(path=installer_list_path)
+            installer_list = HubInstallersList.from_file(path=installer_list_path)
 
         # check installed
         if installer_list and not self._filesystem.is_installed:

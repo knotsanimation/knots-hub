@@ -16,7 +16,7 @@ from knots_hub.filesystem import HubInstallFilesystem
 LOGGER = logging.getLogger(__name__)
 
 
-class InstallerList:
+class HubInstallersList:
     """
     A mapping of "hub version": "hub filesystem path" listing all the "installer" available.
 
@@ -42,7 +42,7 @@ class InstallerList:
         return self._content[-1][1]
 
     @classmethod
-    def from_file(cls, path: Path) -> "InstallerList":
+    def from_file(cls, path: Path) -> "HubInstallersList":
         """
         Get an instance from a serialized json file.
 
@@ -76,7 +76,7 @@ class InstallerList:
         return filtered[0][1]
 
 
-def is_hub_up_to_date(installer_list: Optional[InstallerList]) -> bool:
+def is_hub_up_to_date(installer_list: Optional[HubInstallersList]) -> bool:
     """
     Return True if the current hub version doesn't need update.
     """
