@@ -1,5 +1,9 @@
 import json
 import logging
+import os
+import shutil
+import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict
@@ -10,6 +14,7 @@ from typing import Tuple
 import pythonning.filesystem
 
 import knots_hub
+from knots_hub import OS
 from knots_hub.filesystem import HubInstallFilesystem
 
 
@@ -107,6 +112,39 @@ def install_hub(
 
     filesystem.hubinstall_path.write_text(str(time.time()))
     return filesystem.exe_src
+
+
+def uninstall_hub(filesystem: HubInstallFilesystem):
+    """
+    Exit the hub and uninstall it from the filesystem.
+
+    Args:
+        filesystem: determine what filesystem data to uninstall
+    """
+    prefix = f"{knots_hub.__name__}_uninstall"
+
+    # we will let the system automatically delete the tmp directory
+    uninstall_dir = Path(tempfile.mkdtemp(prefix=f"{prefix}_"))
+
+    if OS.is_windows():
+        script_path = uninstall_dir / "uninstall.bat"
+        script_path.write_text(f'RMDIR /S /Q "{filesystem.root}"', encoding="utf-8")
+        exe = str(script_path)
+        argv = [prefix]
+    else:
+        script_path = uninstall_dir / "uninstall.sh"
+        bash_path = shutil.which("bash")
+        script_path.write_text(f'rmdir -rf "{filesystem.root}"', encoding="utf-8")
+        exe = str(bash_path)
+        argv = [prefix, str(script_path)]
+
+    LOGGER.debug(f"os.execv({exe}, {argv})")
+
+    # we copy the logs to help debugging potential uninstalling issues
+    if filesystem.log_path.exists():
+        shutil.copy(filesystem.log_path, uninstall_dir)
+
+    sys.exit(os.execv(exe, argv))
 
 
 def update_hub(

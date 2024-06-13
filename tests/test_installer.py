@@ -1,6 +1,14 @@
+import os
+import subprocess
+import tempfile
 from pathlib import Path
+from typing import List
 
+import pytest
+
+import knots_hub
 from knots_hub.installer import HubInstallersList
+from knots_hub.installer import uninstall_hub
 
 
 def test__InstallerList__from_file(data_dir):
@@ -22,3 +30,28 @@ def test__InstallerList(data_dir):
     assert instance.last_path == Path("path3")
 
     assert instance.get_path("4.6.0") == Path("path4")
+
+
+def test__uninstall_hub(tmp_path, monkeypatch):
+
+    def _patch_execv(exe: str, argv: List[str]):
+        subprocess.run([exe] + argv[1:], check=True)
+
+    monkeypatch.setattr(os, "execv", _patch_execv)
+
+    def _patch_tempfile(*args, **kwargs):
+        return str(tmp_path)
+
+    monkeypatch.setattr(tempfile, "mkdtemp", _patch_tempfile)
+
+    install_dir = tmp_path / ".hubinstall"
+    install_dir.mkdir()
+    filesystem = knots_hub.HubInstallFilesystem(root=install_dir)
+    # just so it's not empty
+    Path(install_dir, "randomfile.txt").write_text("🦎", encoding="utf-8")
+    filesystem.install_src_dir.mkdir()
+
+    assert filesystem.root.exists()
+    with pytest.raises(SystemExit):
+        uninstall_hub(filesystem=filesystem)
+    assert not filesystem.root.exists()

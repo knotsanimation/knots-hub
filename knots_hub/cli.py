@@ -276,7 +276,9 @@ class UninstallParser(BaseParser):
     """
 
     def execute(self):
-        pass
+        LOGGER.info(f"about to uninstall hub at '{self._filesystem.root}'")
+        # this function exit the session
+        knots_hub.installer.uninstall_hub(filesystem=self._filesystem)
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
