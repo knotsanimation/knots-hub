@@ -44,6 +44,10 @@ class OS:
     def is_windows(cls) -> bool:
         return cls._current in ("win32", "cygwin")
 
+    @classmethod
+    def raise_unsupported(cls):
+        raise OSError(f"Unsupported operating system '{cls}'")
+
 
 EXECUTABLE_NAME = f"{knots_hub.__name__}-v{knots_hub.__version__}"
 """

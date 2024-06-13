@@ -54,7 +54,7 @@ def main(argv: Optional[List[str]] = None):
     LOGGER.debug(f"retrieved cli with args={cli._args}")
 
     if not OS.is_windows():
-        raise OSError(f"Unsupported Operating System '{OS}'.")
+        OS.raise_unsupported()
 
     sys.exit(cli.execute())
 
