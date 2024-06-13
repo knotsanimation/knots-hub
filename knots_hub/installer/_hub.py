@@ -10,7 +10,7 @@ from typing import Tuple
 import pythonning.filesystem
 
 import knots_hub
-from .filesystem import HubInstallFilesystem
+from knots_hub.filesystem import HubInstallFilesystem
 
 
 LOGGER = logging.getLogger(__name__)
