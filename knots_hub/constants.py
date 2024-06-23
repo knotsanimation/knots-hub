@@ -17,6 +17,18 @@ class Environ:
     with an associated path for download.
     """
 
+    VENDOR_INSTALLERS_CONFIG_PATH = f"{_ENVPREFIX}_VENDOR_INSTALLERS_CONFIG"
+    """
+    Filesystem path to an existing json file used to specify which 
+    external program to install with which version.
+    """
+
+    VENDOR_INSTALL_PATH = f"{_ENVPREFIX}_VENDOR_INSTALL_PATH"
+    """
+    Filesystem path to a directory that may exist which is used as root for installing
+    all vendor programs specified in the vendor installers config.
+    """
+
 
 class OS:
     """

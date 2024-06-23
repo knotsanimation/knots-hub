@@ -135,6 +135,34 @@ class BaseParser:
                 )
             sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
 
+        # install or update vendor programs
+        vendor_path = self._config.vendor_installers_config_path
+        if vendor_path and not vendor_path.exists():
+            LOGGER.error(f"Found non-existing vendor installer config '{vendor_path}'")
+        elif vendor_path:
+            vendor_install_dir = self._config.vendor_install_path
+            vendor_install_dir.mkdir(exist_ok=True)
+
+            LOGGER.info(f"reading vendor installers '{vendor_path}'")
+            vendor_installers = knots_hub.installer.read_vendor_installers_from_file(
+                file_path=vendor_path,
+                install_root_path=vendor_install_dir,
+            )
+            LOGGER.info(f"found {len(vendor_installers)} vendor installers.")
+
+            for vendor_installer in vendor_installers:
+                if vendor_installer.version_installed == vendor_installer.version:
+                    LOGGER.debug(f"{vendor_installer} is up-to-date")
+                    continue
+
+                if vendor_installer.is_installed:
+                    # we uninstall so we can install the latest version
+                    LOGGER.info(f"uninstalling {vendor_installer}")
+                    vendor_installer.uninstall()
+
+                LOGGER.info(f"installing {vendor_installer}")
+                vendor_installer.install()
+
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
         """
@@ -276,6 +304,10 @@ class UninstallParser(BaseParser):
     """
 
     def execute(self):
+
+        LOGGER.info(f"removing '{self._config.vendor_install_path}'")
+        shutil.rmtree(self._config.vendor_install_path)
+
         LOGGER.info(f"about to uninstall hub at '{self._filesystem.root}'")
         # this function exit the session
         knots_hub.installer.uninstall_hub(filesystem=self._filesystem)
