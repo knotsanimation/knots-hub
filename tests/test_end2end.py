@@ -91,7 +91,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     )
 
     # check the install system
-    argv = []
+    argv = ["--log-environ"]
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
