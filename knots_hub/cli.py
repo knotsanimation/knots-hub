@@ -1,5 +1,6 @@
 import abc
 import argparse
+import json
 import logging
 import os
 import shutil
@@ -88,6 +89,13 @@ class BaseParser:
         return self._args.debug
 
     @property
+    def log_environ(self) -> bool:
+        """
+        True will log the current system environment variable. Also need the debug flag.
+        """
+        return self._args.log_environ
+
+    @property
     def _restarted(self) -> int:
         """
         True if the app has been call has a restarted session.
@@ -101,6 +109,11 @@ class BaseParser:
         """
         Arbitrary code that must be executed when the user ask this command.
         """
+        if self.log_environ:
+            LOGGER.debug(
+                "environ=" + json.dumps(dict(os.environ), indent=4, sort_keys=True)
+            )
+
         # an empty installer list imply the hub is never installed/updated locally
         installer_list = None
         installer_list_path = self._config.installer_list_path
@@ -172,6 +185,11 @@ class BaseParser:
             "--debug",
             action="store_true",
             help=cls.debug.__doc__,
+        )
+        parser.add_argument(
+            "--log-environ",
+            action="store_true",
+            help=cls.log_environ.__doc__,
         )
         parser.add_argument(
             "--restarted__",
