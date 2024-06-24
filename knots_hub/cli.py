@@ -129,7 +129,7 @@ class BaseParser:
                     install_src_path=src_path,
                     filesystem=self._filesystem,
                 )
-            sys.exit(self._restart_hub(exe=str(exe_path)))
+            return sys.exit(self._restart_hub(exe=str(exe_path)))
 
         # finalize update that took place previously
         if self._filesystem.install_old_dir.exists():
@@ -146,7 +146,7 @@ class BaseParser:
                     update_src_path=src_path,
                     filesystem=self._filesystem,
                 )
-            sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
+            return sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
 
         # install or update vendor programs
         vendor_path = self._config.vendor_installers_config_path
