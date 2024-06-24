@@ -264,7 +264,12 @@ class KlochParser(BaseParser):
         LOGGER.debug(f"using {kloch.__name__} v{kloch.__version__}")
         LOGGER.debug(f"kloch.get_cli({argv})")
         cli = kloch.get_cli(argv=argv)
-        cli.execute()
+        try:
+            sys.exit(cli.execute())
+        finally:
+            # needed else we might get some filehandler permission issue
+            # when clearing the log directory
+            logging.shutdown()
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):

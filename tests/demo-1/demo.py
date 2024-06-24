@@ -12,4 +12,7 @@ with tempfile.TemporaryDirectory(prefix="knots_hub_demo_") as tmpdir:
     print(f"saving content to '{tmpdir}'")
     os.environ[Environ.USER_INSTALL_PATH] = str(tmpdir / "install")
     # os.environ[Environ.INSTALLER_LIST_PATH] = ""
-    knots_hub.__main__.main(argv=["kloch", "plugins", "--debug"])
+    knots_hub.__main__.main(
+        argv=["kloch", "--log-environ", "--debug", "plugins"],
+        logging_configuration=True,
+    )
