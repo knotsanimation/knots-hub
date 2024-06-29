@@ -162,7 +162,7 @@ files = [
 
 [[package]]
 name = "kloch"
-version = "0.7.0"
+version = "0.8.1"
 description = "Environment Manager CLI wrapping package managers calls as serialized config file"
 optional = false
 python-versions = ">=3.7"
@@ -172,11 +172,16 @@ develop = false
 [package.dependencies]
 PyYAML = "^6.0.1"
 
+[package.extras]
+dev = ["black (>=24.4.2,<25.0.0)"]
+doc = ["Sphinx (>=7.3.7,<8.0.0)", "furo (>=2024.4.27,<2025.0.0)", "myst_parser (>=3,<4)", "sphinx-autobuild (==2024.2.4)", "sphinx-copybutton (==0.5)", "sphinx-exec-code (==0.12)"]
+tests = ["pytest (==7.3.2)", "typing-extensions (<4.8)"]
+
 [package.source]
 type = "git"
 url = "https://github.com/knotsanimation/kloch.git"
-reference = "main"
-resolved_reference = "1e6436341eedb814956ffa9714c498f17876ebab"
+reference = "v0.8.1"
+resolved_reference = "d2738a3e3adf12007e9e7c7b615750b4ba25f297"
 
 [[package]]
 name = "kloch-kiche"
@@ -188,7 +193,7 @@ files = []
 develop = false
 
 [package.dependencies]
-kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.7.0"}
+kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.8.1"}
 pythonning = {git = "https://github.com/knotsanimation/pythonning.git"}
 uv = ">=0.2.4"
 
@@ -200,7 +205,7 @@ test = ["pytest (>=7.2.0)", "typing-extensions (<4.8)"]
 type = "git"
 url = "https://github.com/knotsanimation/kloch-launcher-kiche.git"
 reference = "main"
-resolved_reference = "198c4a5a43541f7d4644b555f67a3e5945c1f8a9"
+resolved_reference = "ed717f0cacd54c7c8c9f7fe96e892df4773329b6"
 
 [[package]]
 name = "kloch-rezenv"
@@ -212,7 +217,7 @@ files = []
 develop = false
 
 [package.dependencies]
-kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.7.0"}
+kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.8.1"}
 
 [package.extras]
 dev = ["black (>=24.4.2,<25.0.0)", "pytest (>=7.2.0)", "typing-extensions (<4.8)"]
@@ -221,7 +226,7 @@ dev = ["black (>=24.4.2,<25.0.0)", "pytest (>=7.2.0)", "typing-extensions (<4.8)
 type = "git"
 url = "https://github.com/knotsanimation/kloch-launcher-rezenv.git"
 reference = "main"
-resolved_reference = "74106e64e4c678473fcbbc60d16710f9c03a2d8d"
+resolved_reference = "ee76ca62ed73133e05d3bd84ce50bc5248300e92"
 
 [[package]]
 name = "mypy-extensions"
@@ -350,7 +355,7 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments
 
 [[package]]
 name = "pythonning"
-version = "1.8.0"
+version = "1.9.0"
 description = "Low-level python functions commonly used by any kind of developer."
 optional = false
 python-versions = ">=3.7"
@@ -365,8 +370,8 @@ test = ["pytest (>=7)"]
 [package.source]
 type = "git"
 url = "https://github.com/knotsanimation/pythonning.git"
-reference = "main"
-resolved_reference = "d9d5610ba6aa07235f921c28d9855288a88ba23c"
+reference = "HEAD"
+resolved_reference = "fabc1d5805ebfc1a42a0cf9687218a9ba9f74a6a"
 
 [[package]]
 name = "pyyaml"
@@ -544,4 +549,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1"
-content-hash = "593afb9443aec2bbf9be26b987b5245285bf34131199751269447ce470d48df4"
+content-hash = "f092252669036777d72bf334bdfb169e3384b55519747a4ed5e08210e6a9170a"
