@@ -13,6 +13,9 @@ LOGGER = logging.getLogger(__name__)
 SUPPORTED_INSTALLERS: Dict[str, Type[BaseVendorInstaller]] = {
     RezVendorInstaller.name(): RezVendorInstaller,
 }
+"""
+A mapping of vendor software name: installer that can be installed
+"""
 
 
 def read_vendor_installers_from_file(

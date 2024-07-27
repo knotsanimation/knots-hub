@@ -8,3 +8,4 @@ from ._base import BaseVendorInstaller
 from ._rez import RezVendorInstaller
 
 from ._io import read_vendor_installers_from_file
+from ._io import SUPPORTED_INSTALLERS
