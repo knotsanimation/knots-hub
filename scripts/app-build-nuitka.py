@@ -1,3 +1,4 @@
+import argparse
 import logging
 import shutil
 import subprocess
@@ -13,37 +14,35 @@ import kloch_kiche
 
 THIS_DIR = Path(__file__).parent.resolve()
 REPO_ROOT = THIS_DIR.parent.resolve()
-OVERWRITE_EXISTING = True
+
+LOGGER = logging.getLogger(Path(__file__).stem)
 
 
-def main(repo_root: Path, overwrite_existing: bool = True):
-    app_name = knots_hub.constants.EXECUTABLE_NAME
-    as_one_file = False
-
-    # // read
-    start_script_path = repo_root / knots_hub.__name__ / "__main__.py"
+def build(
+    app_name: str,
+    start_script_path: Path,
+    target_dir: Path = None,
+    overwrite_existing: bool = True,
+    icon_path: Optional[Path] = None,
+):
     """
-    Filesystem path to an existing python script used to start the application.
+    Args:
+        app_name: filename of the executable without the extension
+        start_script_path: Filesystem path to an existing python script used to start the application.
+        target_dir: optional destination directry for the executable
+        overwrite_existing:
+        icon_path:  Filesystem path to an existing .ico or .png file.
     """
 
-    icon_path: Optional[Path] = None
-    """
-    Filesystem path to an existing .ico or .png file.
-    """
-
-    # // write
     workdir = THIS_DIR / ".nuitka"
     """
     Working directory for nuikta, where it can dump all of its files.
     """
 
-    build_dir = THIS_DIR / "build"
-    """
-    Build destination.
-    """
-
-    if as_one_file:
-        raise NotImplementedError("Not implemented yet.")
+    if target_dir:
+        build_dst_dir = target_dir
+    else:
+        build_dst_dir = THIS_DIR / "build" / (app_name + "-nuitka")
 
     command = [
         # "--verbose",
@@ -68,7 +67,6 @@ def main(repo_root: Path, overwrite_existing: bool = True):
     subprocess.run(installer_command, check=True, text=True)
 
     build_src_dir = workdir / (start_script_path.stem + ".dist")
-    build_dst_dir = build_dir / (app_name + "-nuitka")
 
     if overwrite_existing and build_dst_dir.exists():
         LOGGER.debug(f"removing existing {build_dst_dir}")
@@ -80,6 +78,44 @@ def main(repo_root: Path, overwrite_existing: bool = True):
     LOGGER.info(f"build finished in {time.time() - stime}s")
 
 
+def cli(argv=None):
+    argv = argv or sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        description="package knots-hub to a standalone executable",
+    )
+    parser.add_argument(
+        "--app_name",
+        type=str,
+        default=knots_hub.constants.EXECUTABLE_NAME,
+        help="filename of the executable without the extension",
+    )
+    parser.add_argument(
+        "--script_path",
+        type=Path,
+        default=REPO_ROOT / knots_hub.__name__ / "__main__.py",
+        help="filesystem path to a directory that may not exists",
+    )
+    parser.add_argument(
+        "--target_dir",
+        type=Path,
+        default=None,
+        help="filesystem path to a directory that may not exists",
+    )
+    parser.add_argument(
+        "--no-overwrite",
+        action="store_true",
+        help="prevent disk overwrite if the build already exists",
+    )
+    parsed = parser.parse_args(argv)
+    build(
+        app_name=parsed.app_name,
+        start_script_path=parsed.script_path,
+        target_dir=parsed.target_dir,
+        overwrite_existing=False if parsed.no_overwrite else True,
+        icon_path=None,
+    )
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
@@ -87,5 +123,4 @@ if __name__ == "__main__":
         style="{",
         stream=sys.stdout,
     )
-    LOGGER = logging.getLogger(__name__)
-    main(REPO_ROOT, OVERWRITE_EXISTING)
+    cli()
