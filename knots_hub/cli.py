@@ -59,7 +59,7 @@ def get_restart_args(
 
 class BaseParser:
     """
-    The root parser who's all subparsers use as base.
+    The root CLI parser who's all subparsers use as base.
 
     All arguments defined here are accessible by subparsers.
 

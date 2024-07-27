@@ -1,3 +1,19 @@
+"""
+various software that can be installed on the user system
+"""
+
+__all__ = [
+    "is_hub_up_to_date",
+    "install_hub",
+    "uninstall_hub",
+    "update_hub",
+    "HubInstallersList",
+    "BaseVendorInstaller",
+    "RezVendorInstaller",
+    "read_vendor_installers_from_file",
+    "SUPPORTED_INSTALLERS",
+]
+
 from ._hub import is_hub_up_to_date
 from ._hub import install_hub
 from ._hub import uninstall_hub

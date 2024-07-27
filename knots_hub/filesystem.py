@@ -1,3 +1,7 @@
+"""
+manipulate the filesystem
+"""
+
 import logging
 from pathlib import Path
 from typing import Optional
@@ -20,12 +24,35 @@ class HubInstallFilesystem:
 
     def __init__(self, root: Path):
         self.root = root
+        """
+        filesystem path to a root directory that may not exist yet.
+        """
+
         self.install_old_dir = root / "install-old"
+        """
+        filesystem path to the location to store the "old" install step
+        """
+
         self.install_src_dir = root / "install-src"
+        """
+        filesystem path to the location to store the "src" install step
+        """
+
         self.install_new_dir = root / "install-new"
+        """
+        filesystem path to the location to store the "new" install step
+        """
+
         # note: logs are rotated so there might be multiple of those
         self.log_path = root / "hub.log"
+        """
+        filesystem path to the location to store disk logs
+        """
+
         self.hubinstall_path = root / ".hubinstall"
+        """
+        filesystem path to the location to the file indicating the directectory is a root hub install.
+        """
 
         if OS.is_windows():
             executable_filename = f"{EXECUTABLE_NAME}.exe"
@@ -33,8 +60,19 @@ class HubInstallFilesystem:
             executable_filename = f"{EXECUTABLE_NAME}"
 
         self.exe_old = self.install_old_dir / executable_filename
+        """
+        filesystem path to the location of the executable in the "old" install step
+        """
+
         self.exe_src = self.install_src_dir / executable_filename
+        """
+        filesystem path to the location of the executable in the "src" install step
+        """
+
         self.exe_new = self.install_new_dir / executable_filename
+        """
+        filesystem path to the location of the executable in the "new" install step
+        """
 
     @property
     def is_installed(self) -> bool:

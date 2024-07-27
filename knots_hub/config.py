@@ -1,3 +1,7 @@
+"""
+A simple configuration system for the Knots-hub runtime.
+"""
+
 import dataclasses
 import logging
 import os

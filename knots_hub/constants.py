@@ -1,9 +1,17 @@
+"""
+Variables that are constants through the app runtime.
+"""
+
 import sys
 
 import knots_hub
 
 
 class Environ:
+    """
+    Global list of supported environment variables.
+    """
+
     _ENVPREFIX = "KNOTSHUB"
 
     USER_INSTALL_PATH = f"{_ENVPREFIX}_USER_INSTALL_PATH"

@@ -25,3 +25,6 @@ coverage.xml
 # app packaging
 scripts/.nuitka/
 scripts/build/
+
+# documentation
+doc/build/
