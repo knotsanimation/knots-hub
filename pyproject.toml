@@ -8,7 +8,7 @@ readme = "./README.md"
 [tool.poetry.dependencies]
 python = ">=3.8.1"
 pythonning = { git = "https://github.com/knotsanimation/pythonning.git" }
-kloch = { tag = "v0.8.1", git = "https://github.com/knotsanimation/kloch.git" }
+kloch = { tag = "v0.9.0", git = "https://github.com/knotsanimation/kloch.git" }
 kloch_rezenv = { branch = "main", git = "https://github.com/knotsanimation/kloch-launcher-rezenv.git" }
 kloch_kiche = { branch = "main", git = "https://github.com/knotsanimation/kloch-launcher-kiche.git" }
 # extras

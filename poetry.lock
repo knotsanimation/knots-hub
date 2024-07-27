@@ -162,7 +162,7 @@ files = [
 
 [[package]]
 name = "kloch"
-version = "0.8.1"
+version = "0.9.0"
 description = "Environment Manager CLI wrapping package managers calls as serialized config file"
 optional = false
 python-versions = ">=3.7"
@@ -180,8 +180,8 @@ tests = ["pytest (==7.3.2)", "typing-extensions (<4.8)"]
 [package.source]
 type = "git"
 url = "https://github.com/knotsanimation/kloch.git"
-reference = "v0.8.1"
-resolved_reference = "d2738a3e3adf12007e9e7c7b615750b4ba25f297"
+reference = "v0.9.0"
+resolved_reference = "cf33f409686afd37c4d26ba66d108fc3ab613cf0"
 
 [[package]]
 name = "kloch-kiche"
@@ -193,7 +193,7 @@ files = []
 develop = false
 
 [package.dependencies]
-kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.8.1"}
+kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.9.0"}
 pythonning = {git = "https://github.com/knotsanimation/pythonning.git"}
 uv = ">=0.2.4"
 
@@ -205,7 +205,7 @@ test = ["pytest (>=7.2.0)", "typing-extensions (<4.8)"]
 type = "git"
 url = "https://github.com/knotsanimation/kloch-launcher-kiche.git"
 reference = "main"
-resolved_reference = "ed717f0cacd54c7c8c9f7fe96e892df4773329b6"
+resolved_reference = "35ce70b0bea4152357cce09cbffa53eb78cca733"
 
 [[package]]
 name = "kloch-rezenv"
@@ -217,7 +217,7 @@ files = []
 develop = false
 
 [package.dependencies]
-kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.8.1"}
+kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.9.0"}
 
 [package.extras]
 dev = ["black (>=24.4.2,<25.0.0)", "pytest (>=7.2.0)", "typing-extensions (<4.8)"]
@@ -226,7 +226,7 @@ dev = ["black (>=24.4.2,<25.0.0)", "pytest (>=7.2.0)", "typing-extensions (<4.8)
 type = "git"
 url = "https://github.com/knotsanimation/kloch-launcher-rezenv.git"
 reference = "main"
-resolved_reference = "ee76ca62ed73133e05d3bd84ce50bc5248300e92"
+resolved_reference = "369c19430b6a04fb5abc8f3ff2eef91656460b29"
 
 [[package]]
 name = "mypy-extensions"
@@ -549,4 +549,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1"
-content-hash = "f092252669036777d72bf334bdfb169e3384b55519747a4ed5e08210e6a9170a"
+content-hash = "fca7155ba3c716b841d9a9a530c5036c978913f147997fbfa84a8e257e893fc6"
