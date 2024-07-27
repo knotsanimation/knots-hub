@@ -257,13 +257,19 @@ class KlochParser(BaseParser):
 
     def execute(self):
         super().execute()
+        kloch_config = kloch.KlochConfig.from_environment()
         # plugins added in pyproject.toml
-        os.environ["KLOCH_CONFIG_LAUNCHER_PLUGINS"] = "kloch_rezenv,kloch_kiche"
+        kloch_config.launcher_plugins.extend(
+            [
+                "kloch_rezenv",
+                "kloch_kiche",
+            ]
+        )
 
         argv = self._extra_args + (["--debug"] if self.debug else [])
         LOGGER.debug(f"using {kloch.__name__} v{kloch.__version__}")
         LOGGER.debug(f"kloch.get_cli({argv})")
-        cli = kloch.get_cli(argv=argv)
+        cli = kloch.get_cli(argv=argv, config=kloch_config)
         try:
             sys.exit(cli.execute())
         finally:
