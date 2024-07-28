@@ -21,6 +21,7 @@ Contents
    :maxdepth: 2
    :caption: developer
 
+   contributing
    public-api/index
    GitHub <https://github.com/knotsanimation/knots-hub>
 
