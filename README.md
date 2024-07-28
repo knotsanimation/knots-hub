@@ -1,4 +1,4 @@
-# knots-hub
+# ![logo](icon.svg) knots-hub
 
 The highest level software in the Knots studio pipeline. Used directly by
 artist to interract with the pipeline.
