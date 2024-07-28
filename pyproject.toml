@@ -14,7 +14,6 @@ kloch_kiche = { branch = "main", git = "https://github.com/knotsanimation/kloch-
 # extras
 black = "*"
 pytest = "*"
-nuitka = "2.2"
 # extras.doc
 Sphinx = { version = "^7.3.7", python = ">=3.9", optional = true }
 sphinx-autobuild = { version = "2024.2.4", python = ">=3.9", optional = true }
@@ -24,7 +23,7 @@ furo = { version = "^2024.4.27", python = ">=3.9", optional = true }
 myst_parser = { version = "^3", python = ">=3.9,<3.13", optional = true }
 
 [tool.poetry.extras]
-dev = ["black", "nuitka"]
+dev = ["black"]
 test = ["pytest"]
 doc = [
     "Sphinx",

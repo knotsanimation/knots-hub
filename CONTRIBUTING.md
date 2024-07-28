@@ -19,7 +19,7 @@ Building the static documentation.
 - make sure you have the `doc` extras dependencies installed.
 - execute [build-doc.py](doc/build-doc.py)
 
-You can also use the [serve-doc.py](doc/serve-doc.py) for auto-building when 
+You can also use the [serve-doc.py](doc/serve-doc.py) for auto-building when
 you edit a source file (doesn't work for autodoc and source code).
 
 ## tests
@@ -30,17 +30,3 @@ Running the unittests.
 - ```shell
   python -m pytest ./tests  
   ```
-  
-## packaging
-
-Building a standalone executable for distribution.
-
-- make sure you have the `dev` extras dependencies installed.
-- execute [app-build-nuitka.py](scripts/app-build-nuitka.py)
-- output can be found in the `build/` dir next to the script
-
-## deploying
-
-Release your work to be available to anyone at Knots.
-
-- execute [server-deploy.py](scripts/server-deploy.py) (read instructions in top docstring)
