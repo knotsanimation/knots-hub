@@ -354,12 +354,21 @@ class UninstallParser(BaseParser):
 
     def execute(self):
 
-        LOGGER.info(f"removing '{self._config.vendor_install_path}'")
-        shutil.rmtree(self._config.vendor_install_path)
+        uninstalled = False
 
-        LOGGER.info(f"about to uninstall hub at '{self._filesystem.root}'")
-        # this function exit the session
-        knots_hub.installer.uninstall_hub(filesystem=self._filesystem)
+        if self._config.vendor_install_path:
+            LOGGER.info(f"removing '{self._config.vendor_install_path}'")
+            shutil.rmtree(self._config.vendor_install_path)
+            uninstalled = True
+
+        if self._filesystem.is_installed:
+            LOGGER.info(f"about to uninstall hub at '{self._filesystem.root}'")
+            # this function exit the session
+            knots_hub.installer.uninstall_hub(filesystem=self._filesystem)
+            uninstalled = True
+
+        if not uninstalled:
+            LOGGER.info("nothing to uninstall; exiting")
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
