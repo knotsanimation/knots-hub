@@ -263,7 +263,7 @@ class _Parser(BaseParser):
             )
 
         super().execute()
-        print("hub launched")
+        print("no command provided; exiting hub")
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
