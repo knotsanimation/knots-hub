@@ -34,6 +34,9 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     """
     caplog.set_level("DEBUG")
 
+    install_dir = tmp_path / "hub"
+    filesystem = knots_hub.HubInstallFilesystem(root=install_dir)
+
     last_hub_version = "999.1.0"
     installers_content = {
         last_hub_version: "./v999",
@@ -44,12 +47,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         json.dump(installers_content, file, indent=4)
 
     os.mkdir(tmp_path / "v999")
-    Path(tmp_path, "v999", knots_hub.constants.EXECUTABLE_NAME).write_text(
-        "fake executable"
-    )
-
-    install_dir = tmp_path / "hub"
-    filesystem = knots_hub.HubInstallFilesystem(root=install_dir)
+    Path(tmp_path, "v999", filesystem.exe_src.name).write_text("fake executable")
 
     vendor_install_dir = tmp_path / "vendor"
 
@@ -233,3 +231,19 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert ExecvPatcher.called is False, ExecvPatcher.args
     assert InstallRezPatcher.called is True
     assert InstallPythonPatcher.called is True
+
+    # check --force-local-restart is working
+
+    ExecvPatcher.called = False
+    InstallPythonPatcher.called = False
+    InstallRezPatcher.called = False
+
+    argv = ["--force-local-restart"]
+    with pytest.raises(SystemExit):
+        knots_hub.__main__.main(argv=argv)
+
+    assert ExecvPatcher.called is True, ExecvPatcher.args
+    assert ExecvPatcher.exe == filesystem.exe_src
+    assert "--force-local-restart" not in ExecvPatcher.args
+    assert InstallRezPatcher.called is False
+    assert InstallPythonPatcher.called is False

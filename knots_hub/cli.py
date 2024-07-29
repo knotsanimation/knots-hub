@@ -53,6 +53,10 @@ def get_restart_args(
         new_argv.pop(index)
         new_argv.pop(index)
 
+    # prevent an infinite recursion
+    if "--force-local-restart" in new_argv:
+        new_argv.remove("--force-local-restart")
+
     argv += new_argv
     return argv
 
@@ -96,6 +100,13 @@ class BaseParser:
         return self._args.log_environ
 
     @property
+    def force_local_restart(self) -> bool:
+        """
+        Force a restart with the locally installed executable, if any.
+        """
+        return self._args.force_local_restart
+
+    @property
     def _restarted(self) -> int:
         """
         True if the app has been call has a restarted session.
@@ -109,6 +120,10 @@ class BaseParser:
         """
         Arbitrary code that must be executed when the user ask this command.
         """
+        if self.force_local_restart and self._filesystem.is_installed:
+            exe_path = self._filesystem.last_executable
+            return sys.exit(self._restart_hub(exe=str(exe_path)))
+
         if self.log_environ:
             LOGGER.debug(
                 "environ=" + json.dumps(dict(os.environ), indent=4, sort_keys=True)
@@ -190,6 +205,11 @@ class BaseParser:
             "--log-environ",
             action="store_true",
             help=cls.log_environ.__doc__,
+        )
+        parser.add_argument(
+            "--force-local-restart",
+            action="store_true",
+            help=cls.force_local_restart.__doc__,
         )
         parser.add_argument(
             "--restarted__",

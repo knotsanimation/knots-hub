@@ -87,3 +87,16 @@ class HubInstallFilesystem:
         if not self.hubinstall_path.exists():
             return None
         return float(self.hubinstall_path.read_text("utf-8"))
+
+    @property
+    def last_executable(self) -> Optional[Path]:
+        """
+        filesystem path to the last installed executable (that may still need update steps).
+        """
+        if self.exe_new.exists():
+            return self.exe_new
+        if self.exe_src.exists():
+            return self.exe_src
+        if self.exe_old.exists():
+            return self.exe_old
+        return None
