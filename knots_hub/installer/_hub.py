@@ -130,12 +130,13 @@ def uninstall_hub(filesystem: HubInstallFilesystem):
         script_path = uninstall_dir / "uninstall.bat"
         script_path.write_text(f'RMDIR /S /Q "{filesystem.root}"', encoding="utf-8")
         exe = str(script_path)
-        argv = [prefix]
+        argv = [exe]
     else:
         script_path = uninstall_dir / "uninstall.sh"
         bash_path = shutil.which("bash")
         script_path.write_text(f'rmdir -rf "{filesystem.root}"', encoding="utf-8")
         exe = str(bash_path)
+        # TODO: not sure we need the prefix
         argv = [prefix, str(script_path)]
 
     LOGGER.debug(f"os.execv({exe}, {argv})")
