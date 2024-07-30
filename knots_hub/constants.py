@@ -2,6 +2,7 @@
 Variables that are constants through the app runtime.
 """
 
+import re
 import sys
 
 import knots_hub
@@ -72,6 +73,11 @@ class OS:
 EXECUTABLE_NAME = f"{knots_hub.__name__}-v{knots_hub.__version__}"
 """
 Name to give to the packaged executable, without the file extension.
+"""
+
+EXECUTABLE_NAME_REGEX = re.compile(rf"{knots_hub.__name__}-v[\d.]+")
+"""
+An expression that must match wen a string is a potential EXECUTABLE_NAME
 """
 
 # https://nuitka.net/user-documentation/tips.html#detecting-nuitka-at-run-time

@@ -6,17 +6,59 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from knots_hub import OS
 from knots_hub.constants import EXECUTABLE_NAME
-from knots_hub.constants import OS
+from knots_hub.constants import EXECUTABLE_NAME_REGEX
 
 LOGGER = logging.getLogger(__name__)
+
+
+def find_hub_executable(directory: Path) -> Optional[Path]:
+    """
+    Get the path of the hub executable stored in the given directory.
+
+    Args:
+        directory: filesystem path to an existing directory
+
+    Returns:
+        filesystem path to an existing file or None if not found
+    """
+    for filepath in directory.glob("*"):
+        if filepath.is_dir():
+            continue
+        if EXECUTABLE_NAME_REGEX.search(filepath.name):
+            return filepath
+    return None
+
+
+def get_expected_hub_executable(directory: Path) -> Path:
+    """
+    Get the path of the expected hub executable for this library version.
+
+    Note a previous version might be installed locally so this is why this path might
+    exist or not.
+
+    Args:
+        directory: filesystem path to a directory that may exist
+
+    Returns:
+        filesystem path to a file that might exist or not.
+    """
+    if OS.is_windows():
+        return directory / f"{EXECUTABLE_NAME}.exe"
+    return directory / EXECUTABLE_NAME
 
 
 class HubInstallFilesystem:
     """
     Represent the filesystem structure of a hub installation.
 
-    Not all paths are guaranteed to exist depending on the state of the installation.
+    NOT all paths are guaranteed to exist depending on the state of the installation.
+
+    THe dintinction between "expected" and "current" for executable path is caused
+    by the possibility of having a local instance that is at an older version than
+    the current runtime (which may have been started from the server executable that
+    is not installe dyet but is about to).
 
     Args:
         root: filesystem path to a directory that may not exist yet.
@@ -54,25 +96,53 @@ class HubInstallFilesystem:
         filesystem path to the location to the file indicating the directectory is a root hub install.
         """
 
-        if OS.is_windows():
-            executable_filename = f"{EXECUTABLE_NAME}.exe"
-        else:
-            executable_filename = f"{EXECUTABLE_NAME}"
+    @property
+    def current_exe_src(self) -> Optional[Path]:
+        """
+        Returns:
+            filesystem path to an existing executable or None if not found
+        """
+        return find_hub_executable(self.install_src_dir)
 
-        self.exe_old = self.install_old_dir / executable_filename
+    @property
+    def current_exe_old(self) -> Optional[Path]:
         """
-        filesystem path to the location of the executable in the "old" install step
+        Returns:
+            filesystem path to an existing executable or None if not found
         """
+        return find_hub_executable(self.install_old_dir)
 
-        self.exe_src = self.install_src_dir / executable_filename
+    @property
+    def current_exe_new(self) -> Optional[Path]:
         """
-        filesystem path to the location of the executable in the "src" install step
+        Returns:
+            filesystem path to an existing executable or None if not found
         """
+        return find_hub_executable(self.install_new_dir)
 
-        self.exe_new = self.install_new_dir / executable_filename
+    @property
+    def expected_exe_src(self) -> Path:
         """
-        filesystem path to the location of the executable in the "new" install step
+        Returns:
+            filesystem path to an executable that may exist
         """
+        return get_expected_hub_executable(self.install_src_dir)
+
+    @property
+    def expected_exe_old(self) -> Path:
+        """
+        Returns:
+            filesystem path to an executable that may exist
+        """
+        return get_expected_hub_executable(self.install_old_dir)
+
+    @property
+    def expected_exe_new(self) -> Path:
+        """
+        Returns:
+            filesystem path to an executable that may exist
+        """
+        return get_expected_hub_executable(self.install_new_dir)
 
     @property
     def is_installed(self) -> bool:
@@ -91,12 +161,14 @@ class HubInstallFilesystem:
     @property
     def last_executable(self) -> Optional[Path]:
         """
-        filesystem path to the last installed executable (that may still need update steps).
+        Filesystem path to the last locally installed executable (that may still need update steps).
+
+        Note the executable might be of a previous version than the current runtime.
         """
-        if self.exe_new.exists():
-            return self.exe_new
-        if self.exe_src.exists():
-            return self.exe_src
-        if self.exe_old.exists():
-            return self.exe_old
+        if self.current_exe_new:
+            return self.current_exe_new
+        if self.current_exe_src:
+            return self.current_exe_src
+        if self.current_exe_old:
+            return self.current_exe_old
         return None

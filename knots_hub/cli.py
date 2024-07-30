@@ -122,6 +122,10 @@ class BaseParser:
         """
         if self.force_local_restart and self._filesystem.is_installed:
             exe_path = self._filesystem.last_executable
+            if not exe_path:
+                raise RuntimeError(
+                    f"Can't find the last executable for filesystem root '{self._filesystem.root}'"
+                )
             return sys.exit(self._restart_hub(exe=str(exe_path)))
 
         if self.log_environ:
@@ -324,7 +328,7 @@ class ApplyUpdateParser(BaseParser):
             LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
             old_path.rename(new_path)
 
-            exe = str(self._filesystem.exe_old)
+            exe = str(self._filesystem.current_exe_old)
             sys.exit(self._restart_hub(exe=exe, apply_update=2))
 
         if self.stage == 2:
@@ -334,7 +338,7 @@ class ApplyUpdateParser(BaseParser):
             LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
             old_path.rename(new_path)
 
-            exe = str(self._filesystem.exe_src)
+            exe = str(self._filesystem.current_exe_src)
             sys.exit(self._restart_hub(exe=exe))
 
     @classmethod

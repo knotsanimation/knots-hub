@@ -111,7 +111,7 @@ def install_hub(
         pythonning.filesystem.extract_zip(installed_file)
 
     filesystem.hubinstall_path.write_text(str(time.time()))
-    return filesystem.exe_src
+    return filesystem.current_exe_src
 
 
 def uninstall_hub(filesystem: HubInstallFilesystem):
@@ -165,4 +165,4 @@ def update_hub(
         LOGGER.debug(f"extracting zip archive '{installed_file}'")
         pythonning.filesystem.extract_zip(installed_file)
 
-    return filesystem.exe_new
+    return filesystem.current_exe_new

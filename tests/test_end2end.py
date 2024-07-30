@@ -47,7 +47,9 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         json.dump(installers_content, file, indent=4)
 
     os.mkdir(tmp_path / "v999")
-    Path(tmp_path, "v999", filesystem.exe_src.name).write_text("fake executable")
+    Path(tmp_path, "v999", filesystem.expected_exe_src.name).write_text(
+        "fake executable"
+    )
 
     vendor_install_dir = tmp_path / "vendor"
 
@@ -94,7 +96,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         knots_hub.__main__.main(argv=argv)
 
     assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.exe_src
+    assert ExecvPatcher.exe == filesystem.current_exe_src
     assert ExecvPatcher.exe.parent.exists()
     assert filesystem.install_src_dir.exists()
     assert not filesystem.install_new_dir.exists()
@@ -109,7 +111,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         knots_hub.__main__.main(argv=argv)
 
     assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.exe_new
+    assert ExecvPatcher.exe == filesystem.current_exe_new
     assert ExecvPatcher.exe.parent.exists()
     assert filesystem.install_src_dir.exists()
     assert filesystem.install_new_dir.exists()
@@ -125,7 +127,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         knots_hub.__main__.main(argv=argv)
 
     assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.exe_old
+    assert ExecvPatcher.exe == filesystem.current_exe_old
     assert ExecvPatcher.exe.parent.exists()
     assert not filesystem.install_src_dir.exists()
     assert filesystem.install_new_dir.exists()
@@ -141,7 +143,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         knots_hub.__main__.main(argv=argv)
 
     assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.exe_src
+    assert ExecvPatcher.exe == filesystem.current_exe_src
     assert ExecvPatcher.exe.parent.exists()
     assert filesystem.install_src_dir.exists()
     assert not filesystem.install_new_dir.exists()
@@ -243,7 +245,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         knots_hub.__main__.main(argv=argv)
 
     assert ExecvPatcher.called is True, ExecvPatcher.args
-    assert ExecvPatcher.exe == filesystem.exe_src
+    assert ExecvPatcher.exe == filesystem.current_exe_src
     assert "--force-local-restart" not in ExecvPatcher.args
     assert InstallRezPatcher.called is False
     assert InstallPythonPatcher.called is False
