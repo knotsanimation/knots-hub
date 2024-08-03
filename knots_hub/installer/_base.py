@@ -18,7 +18,7 @@ class BaseVendorInstaller(abc.ABC):
     The version is an arbitrary text that is used in a binary fashion, meaning or the
     version installed on disk is similar to the instance, or both are different then
     the instance is always prioritized. In theory an user can't have a more recent
-    version on disk than the one liste din the config.
+    version on disk than the one listed in the config.
     """
 
     def __init__(self, version: int, install_dir: Path):
@@ -43,6 +43,18 @@ class BaseVendorInstaller(abc.ABC):
         """
         Unique installer name across all installer subclasses.
         """
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def documentation(cls) -> list[str]:
+        """
+        Documentation of the installer for the static html documentation.
+
+        Return a list of lines which are valid rst syntax.
+        """
+        # XXX this is not the best place to implement as this class is not supposed to
+        #   know it is being serialized. But good enough for now.
         pass
 
     @property

@@ -79,6 +79,19 @@ class RezVendorInstaller(BaseVendorInstaller):
     def name(cls) -> str:
         return "rez"
 
+    @classmethod
+    def documentation(cls) -> list[str]:
+        return [
+            "Installer for `rez <https://github.com/AcademySoftwareFoundation/rez>`_.",
+            "",
+            "Expect the following arguments:",
+            "",
+            "- ``version`` `(int)`: an arbitrary integer that must be incremented on every other argument change to trigger updates on the user system.",
+            "- ``python_version`` `(str)`: a full valid python version to install rez with.",
+            "- ``rez_version`` `(str)`: a full valid rez version to install from the official GitHub repo.",
+            # note that `install_dir` is provided by `read_vendor_installers_from_file`
+        ]
+
     def install(self):
 
         if self.is_installed:
