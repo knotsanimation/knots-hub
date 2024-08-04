@@ -3,7 +3,6 @@ import argparse
 import json
 import logging
 import os
-import shutil
 import sys
 from typing import List
 from typing import Type
@@ -16,6 +15,7 @@ from knots_hub import HubInstallFilesystem
 from knots_hub import HubConfig
 import knots_hub.installer
 from knots_hub.installer import HubInstallersList
+from knots_hub.filesystem import rmtree
 
 LOGGER = logging.getLogger(__name__)
 
@@ -154,7 +154,7 @@ class BaseParser:
         if self._filesystem.install_old_dir.exists():
             old_dir = self._filesystem.install_old_dir
             LOGGER.debug(f"shutil.rmtree('{old_dir}')")
-            shutil.rmtree(old_dir)
+            rmtree(old_dir)
 
         # check up-to-date (only if there was no "old-dir" which implied an update all-ready just occurred.)
         elif not knots_hub.installer.is_hub_up_to_date(installer_list):
@@ -362,7 +362,7 @@ class UninstallParser(BaseParser):
 
         if self._config.vendor_install_path:
             LOGGER.info(f"removing '{self._config.vendor_install_path}'")
-            shutil.rmtree(self._config.vendor_install_path)
+            rmtree(self._config.vendor_install_path)
             uninstalled = True
 
         if self._filesystem.is_installed:
