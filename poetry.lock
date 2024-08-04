@@ -340,7 +340,7 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "kloch"
-version = "0.9.0"
+version = "0.10.0"
 description = "Environment Manager CLI wrapping package managers calls as serialized config file"
 optional = false
 python-versions = ">=3.7"
@@ -358,8 +358,8 @@ tests = ["pytest (==7.3.2)", "typing-extensions (<4.8)"]
 [package.source]
 type = "git"
 url = "https://github.com/knotsanimation/kloch.git"
-reference = "v0.9.0"
-resolved_reference = "cf33f409686afd37c4d26ba66d108fc3ab613cf0"
+reference = "HEAD"
+resolved_reference = "e046fa78eb1f4fc2675cfe3f4db852a192b103fb"
 
 [[package]]
 name = "kloch-kiche"
@@ -371,7 +371,7 @@ files = []
 develop = false
 
 [package.dependencies]
-kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.9.0"}
+kloch = {git = "https://github.com/knotsanimation/kloch.git"}
 pythonning = {git = "https://github.com/knotsanimation/pythonning.git"}
 uv = ">=0.2.4"
 
@@ -383,7 +383,7 @@ test = ["pytest (>=7.2.0)", "typing-extensions (<4.8)"]
 type = "git"
 url = "https://github.com/knotsanimation/kloch-launcher-kiche.git"
 reference = "main"
-resolved_reference = "35ce70b0bea4152357cce09cbffa53eb78cca733"
+resolved_reference = "8ef1de6434047845149b32ff37c853b1d5bd3ddc"
 
 [[package]]
 name = "kloch-rezenv"
@@ -395,7 +395,7 @@ files = []
 develop = false
 
 [package.dependencies]
-kloch = {git = "https://github.com/knotsanimation/kloch.git", tag = "v0.9.0"}
+kloch = {git = "https://github.com/knotsanimation/kloch.git"}
 
 [package.extras]
 dev = ["black (>=24.4.2,<25.0.0)", "pytest (>=7.2.0)", "typing-extensions (<4.8)"]
@@ -404,7 +404,7 @@ dev = ["black (>=24.4.2,<25.0.0)", "pytest (>=7.2.0)", "typing-extensions (<4.8)
 type = "git"
 url = "https://github.com/knotsanimation/kloch-launcher-rezenv.git"
 reference = "main"
-resolved_reference = "369c19430b6a04fb5abc8f3ff2eef91656460b29"
+resolved_reference = "401b82048853b7c3913b6117d68252f171523a3c"
 
 [[package]]
 name = "livereload"
@@ -1095,4 +1095,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1"
-content-hash = "464bac51b68c6b135d1ac0af21fd2244b82e500af466719890e16576e9b424d0"
+content-hash = "f9f7c7193a0fa37e52d899407bcb4e8e9b8176da3cd84c7b9975311dc0e37f07"
