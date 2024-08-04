@@ -3,6 +3,7 @@ manipulate the filesystem
 """
 
 import logging
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,18 @@ from knots_hub.constants import EXECUTABLE_NAME
 from knots_hub.constants import EXECUTABLE_NAME_REGEX
 
 LOGGER = logging.getLogger(__name__)
+
+
+def rmtree(path: Path):
+    """
+    Remove the directory and its content while handling any potential PermissionError.
+
+    Args:
+        path: filesystem path to an existing directory
+    """
+    # XXX: hack before `tempfile` rmtree is better than default `shutil.rmtree `
+    #  in handling permission errors
+    tempfile.TemporaryDirectory._rmtree(path)
 
 
 def find_hub_executable(directory: Path) -> Optional[Path]:
