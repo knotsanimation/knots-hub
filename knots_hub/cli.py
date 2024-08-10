@@ -107,6 +107,13 @@ class BaseParser:
         return self._args.force_local_restart
 
     @property
+    def no_coloring(self) -> bool:
+        """
+        Disable colored logging, in case your system doesn't support it.
+        """
+        return self._args.no_coloring
+
+    @property
     def _restarted(self) -> int:
         """
         True if the app has been call has a restarted session.
@@ -211,6 +218,11 @@ class BaseParser:
             "--debug",
             action="store_true",
             help=cls.debug.__doc__,
+        )
+        parser.add_argument(
+            "--no-coloring",
+            action="store_true",
+            help=cls.no_coloring.__doc__,
         )
         parser.add_argument(
             "--log-environ",

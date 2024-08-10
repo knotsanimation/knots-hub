@@ -7,34 +7,9 @@ from typing import Optional
 import knots_hub
 from knots_hub.constants import OS
 from knots_hub.constants import IS_APP_FROZEN
+from knots_hub._logging import configure_logging
 
 LOGGER = logging.getLogger(__name__)
-
-
-def configure_logging(log_level, log_path):
-
-    formatter = logging.Formatter(
-        "{levelname: <7} | {asctime} [{name}] {message}",
-        style="{",
-    )
-    # XXX: this will affect other libraries logging
-    logging.root.setLevel(logging.DEBUG)
-
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setLevel(log_level)
-    handler.setFormatter(formatter)
-    logging.root.addHandler(handler)
-
-    handler = logging.handlers.RotatingFileHandler(
-        log_path,
-        maxBytes=65536,
-        # need at least one backup to rotate
-        backupCount=1,
-        encoding="utf-8",
-    )
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(formatter)
-    logging.root.addHandler(handler)
 
 
 def main(argv: Optional[List[str]] = None, logging_configuration: bool = False):
@@ -52,7 +27,11 @@ def main(argv: Optional[List[str]] = None, logging_configuration: bool = False):
 
     log_level = logging.DEBUG if cli.debug else logging.INFO
     if logging_configuration:
-        configure_logging(log_level=log_level, log_path=filesystem.log_path)
+        configure_logging(
+            log_level=log_level,
+            log_path=filesystem.log_path,
+            disable_coloring=cli.no_coloring,
+        )
 
     LOGGER.debug(
         f"starting {knots_hub.__name__} v{knots_hub.__version__} (frozen={IS_APP_FROZEN})"
