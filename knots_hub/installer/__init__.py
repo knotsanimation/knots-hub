@@ -3,6 +3,7 @@ various software that can be installed on the user system
 """
 
 __all__ = [
+    "create_exe_shortcut",
     "is_hub_up_to_date",
     "install_hub",
     "uninstall_hub",
@@ -13,6 +14,8 @@ __all__ = [
     "read_vendor_installers_from_file",
     "SUPPORTED_INSTALLERS",
 ]
+
+from ._shortcut import create_exe_shortcut
 
 from ._hub import is_hub_up_to_date
 from ._hub import install_hub

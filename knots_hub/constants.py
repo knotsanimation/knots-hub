@@ -80,6 +80,13 @@ EXECUTABLE_NAME_REGEX = re.compile(rf"{knots_hub.__name__}-v[\d.]+")
 An expression that must match wen a string is a potential EXECUTABLE_NAME
 """
 
+SHORTCUT_NAME = "knots-hub"
+"""
+Name of the shortcut to the last executable, without the file extension.
+
+Changing this could have unplanned consequences.
+"""
+
 # https://nuitka.net/user-documentation/tips.html#detecting-nuitka-at-run-time
 _IS_PACKAGED_NUITKA = hasattr(knots_hub, "__compiled__")
 

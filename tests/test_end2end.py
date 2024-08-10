@@ -1,8 +1,11 @@
+import filecmp
 import json
 import os
 import sys
+import uuid
 from pathlib import Path
 from typing import List
+from typing import Type
 
 import pytest
 
@@ -90,6 +93,15 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         knots_hub.Environ.VENDOR_INSTALLERS_CONFIG_PATH, str(vendor_config_path)
     )
 
+    def _check_shortcut():
+        _src_shortcut_path = knots_hub.installer.create_exe_shortcut(
+            filesystem.root, ExecvPatcher.exe, dry_run=True
+        )
+        assert _src_shortcut_path.exists()
+        if knots_hub.OS.is_windows():
+            # XXX: windows lnk store the link in ascii
+            assert bytes(ExecvPatcher.exe) in _src_shortcut_path.read_bytes()
+
     # check the install system
     argv = ["--log-environ"]
     with pytest.raises(SystemExit):
@@ -119,6 +131,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert "--restarted__" in ExecvPatcher.args
     assert "__applyupdate 1" in " ".join(ExecvPatcher.args)
     assert "UNWANTEDARG" not in ExecvPatcher.args
+    _check_shortcut()
 
     # check the apply update stage 1 system
     ExecvPatcher.called = False
@@ -135,6 +148,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert "--restarted__" in ExecvPatcher.args
     assert "__applyupdate 2" in " ".join(ExecvPatcher.args)
     assert "UNWANTEDARG" not in ExecvPatcher.args
+    _check_shortcut()
 
     # check the apply update stage 2 system
     ExecvPatcher.called = False
@@ -150,6 +164,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert filesystem.install_old_dir.exists()
     assert "--restarted__" in ExecvPatcher.args
     assert "__applyupdate" not in ExecvPatcher.args
+    _check_shortcut()
 
     # the hub is supposed to restarted with the latest version so we fake it by manually
     # overriding it.
