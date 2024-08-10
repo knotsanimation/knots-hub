@@ -100,7 +100,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         assert _src_shortcut_path.exists()
         if knots_hub.OS.is_windows():
             # XXX: windows lnk store the link in ascii
-            assert bytes(ExecvPatcher.exe) in _src_shortcut_path.read_bytes()
+            assert bytes(filesystem.last_executable) in _src_shortcut_path.read_bytes()
 
     # check the install system
     argv = ["--log-environ"]
@@ -131,7 +131,6 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert "--restarted__" in ExecvPatcher.args
     assert "__applyupdate 1" in " ".join(ExecvPatcher.args)
     assert "UNWANTEDARG" not in ExecvPatcher.args
-    _check_shortcut()
 
     # check the apply update stage 1 system
     ExecvPatcher.called = False
@@ -148,7 +147,6 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert "--restarted__" in ExecvPatcher.args
     assert "__applyupdate 2" in " ".join(ExecvPatcher.args)
     assert "UNWANTEDARG" not in ExecvPatcher.args
-    _check_shortcut()
 
     # check the apply update stage 2 system
     ExecvPatcher.called = False

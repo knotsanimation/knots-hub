@@ -133,6 +133,13 @@ class BaseParser:
                 "environ=" + json.dumps(dict(os.environ), indent=4, sort_keys=True)
             )
 
+        if self._filesystem.is_installed:
+            shortcut = knots_hub.installer.create_exe_shortcut(
+                shortcut_dir=self._filesystem.root,
+                exe_path=self._filesystem.last_executable,
+            )
+            LOGGER.debug(f"updated shortcut '{shortcut}'")
+
         # an empty installer list imply the hub is never installed/updated locally
         installer_list = None
         installer_list_path = self._config.installer_list_path
@@ -148,10 +155,6 @@ class BaseParser:
                     install_src_path=src_path,
                     filesystem=self._filesystem,
                 )
-            knots_hub.installer.create_exe_shortcut(
-                shortcut_dir=self._filesystem.root,
-                exe_path=exe_path,
-            )
             return sys.exit(self._restart_hub(exe=str(exe_path)))
 
         # finalize update that took place previously
@@ -169,10 +172,6 @@ class BaseParser:
                     update_src_path=src_path,
                     filesystem=self._filesystem,
                 )
-            knots_hub.installer.create_exe_shortcut(
-                shortcut_dir=self._filesystem.root,
-                exe_path=exe_path,
-            )
             return sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
 
         # install or update vendor programs
@@ -336,12 +335,8 @@ class ApplyUpdateParser(BaseParser):
             LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
             old_path.rename(new_path)
 
-            exe = self._filesystem.current_exe_old
-            knots_hub.installer.create_exe_shortcut(
-                shortcut_dir=self._filesystem.root,
-                exe_path=exe,
-            )
-            sys.exit(self._restart_hub(exe=str(exe), apply_update=2))
+            exe = str(self._filesystem.current_exe_old)
+            sys.exit(self._restart_hub(exe=exe, apply_update=2))
 
         if self.stage == 2:
             LOGGER.info("applying update stage 2")
@@ -350,12 +345,8 @@ class ApplyUpdateParser(BaseParser):
             LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
             old_path.rename(new_path)
 
-            exe = self._filesystem.current_exe_src
-            knots_hub.installer.create_exe_shortcut(
-                shortcut_dir=self._filesystem.root,
-                exe_path=exe,
-            )
-            sys.exit(self._restart_hub(exe=str(exe)))
+            exe = str(self._filesystem.current_exe_src)
+            sys.exit(self._restart_hub(exe=exe))
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
