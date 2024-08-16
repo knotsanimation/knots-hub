@@ -70,34 +70,26 @@ class RezVendorInstaller(BaseVendorInstaller):
         rez_version: str,
         version: int,
         install_dir: Path,
+        dirs_to_make: list[Path] = None,
     ):
         self._python_version = python_version
         self._rez_version = rez_version
-        super().__init__(install_dir=install_dir, version=version)
+        super().__init__(
+            version=version,
+            install_dir=install_dir,
+            dirs_to_make=dirs_to_make,
+        )
 
     @classmethod
     def name(cls) -> str:
         return "rez"
-
-    @classmethod
-    def documentation(cls) -> list[str]:
-        return [
-            "Installer for `rez <https://github.com/AcademySoftwareFoundation/rez>`_.",
-            "",
-            "Expect the following arguments:",
-            "",
-            "- ``version`` `(int)`: an arbitrary integer that must be incremented on every other argument change to trigger updates on the user system.",
-            "- ``python_version`` `(str)`: a full valid python version to install rez with.",
-            "- ``rez_version`` `(str)`: a full valid rez version to install from the official GitHub repo.",
-            # note that `install_dir` is provided by `read_vendor_installers_from_file`
-        ]
 
     def install(self):
 
         if self.is_installed:
             return
 
-        self._install_dir.mkdir(exist_ok=True)
+        self.make_install_directories()
 
         python_dir = self._install_dir / "python"
         python_dir.mkdir()

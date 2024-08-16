@@ -21,10 +21,16 @@ class BaseVendorInstaller(abc.ABC):
     version on disk than the one listed in the config.
     """
 
-    def __init__(self, version: int, install_dir: Path):
+    def __init__(
+        self,
+        version: int,
+        install_dir: Path,
+        dirs_to_make: list[Path] = None,
+    ):
         self._version = version
         self._install_dir = install_dir
         self._install_file = install_dir / ".installed"
+        self._dirs_to_make = dirs_to_make or []
 
     def __str__(self):
         return f"{self.__class__.__name__}<v{self.version}>"
@@ -45,24 +51,26 @@ class BaseVendorInstaller(abc.ABC):
         """
         pass
 
-    @classmethod
-    @abc.abstractmethod
-    def documentation(cls) -> list[str]:
-        """
-        Documentation of the installer for the static html documentation.
-
-        Return a list of lines which are valid rst syntax.
-        """
-        # XXX this is not the best place to implement as this class is not supposed to
-        #   know it is being serialized. But good enough for now.
-        pass
-
     @property
     def version(self) -> int:
         """
         Current version of the installer configuration.
         """
         return self._version
+
+    @property
+    def install_dir(self) -> Path:
+        """
+        Filesystem path to a directory that may not exist and used to install the vendor program to.
+        """
+        return self._install_dir
+
+    @property
+    def dirs_to_make(self) -> list[Path]:
+        """
+        List of filesystem path to directory that must be created on installation.
+        """
+        return self._dirs_to_make
 
     @property
     def is_installed(self) -> bool:
@@ -100,6 +108,17 @@ class BaseVendorInstaller(abc.ABC):
         """
         LOGGER.debug(f"writting '{self._install_file}'")
         self._install_file.write_text(f"{self._version}={time.time()}")
+
+    def make_install_directories(self):
+        """
+        Create all the directories used for installation, given by the user.
+
+        Usually manually called in the ``install`` method subclass override.
+        """
+        for dir_path in self._dirs_to_make + [self._install_dir]:
+            if not dir_path.exists():
+                LOGGER.debug(f"mkdir('{dir_path}')")
+                dir_path.mkdir()
 
     @abc.abstractmethod
     def install(self):

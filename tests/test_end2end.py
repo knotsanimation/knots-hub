@@ -55,10 +55,13 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     )
 
     vendor_install_dir = tmp_path / "vendor"
+    rez_install_dir = vendor_install_dir / "rez"
 
     vendor_config = {
         "rez": {
             "version": 1,
+            "install_dir": str(rez_install_dir),
+            "dirs_to_make": [str(vendor_install_dir)],
             "python_version": "3.10.11",
             "rez_version": "2.114.1",
         }
@@ -88,7 +91,6 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
 
     monkeypatch.setenv(knots_hub.Environ.USER_INSTALL_PATH, str(install_dir))
     monkeypatch.setenv(knots_hub.Environ.INSTALLER_LIST_PATH, str(installers_path))
-    monkeypatch.setenv(knots_hub.Environ.VENDOR_INSTALL_PATH, str(vendor_install_dir))
     monkeypatch.setenv(
         knots_hub.Environ.VENDOR_INSTALLERS_CONFIG_PATH, str(vendor_config_path)
     )
@@ -210,6 +212,8 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert not filesystem.install_old_dir.exists()
     assert InstallRezPatcher.called is True
     assert InstallPythonPatcher.called is True
+    assert vendor_install_dir.exists()
+    assert rez_install_dir.exists()
 
     # check launching after everything is installed
 
@@ -233,6 +237,8 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
             "version": 2,
             "python_version": "3.10.11",
             "rez_version": "2.114.1",
+            "install_dir": str(rez_install_dir),
+            "dirs_to_make": [str(vendor_install_dir)],
         }
     }
     vendor_config_path = tmp_path / "vendor-config.json"
@@ -262,3 +268,15 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert "--force-local-restart" not in ExecvPatcher.args
     assert InstallRezPatcher.called is False
     assert InstallPythonPatcher.called is False
+
+    # test uninstall
+
+    assert vendor_install_dir.exists()
+    assert rez_install_dir.exists()
+
+    argv = ["uninstall"]
+    with pytest.raises(SystemExit):
+        knots_hub.__main__.main(argv=argv)
+
+    assert not vendor_install_dir.exists()
+    assert not rez_install_dir.exists()

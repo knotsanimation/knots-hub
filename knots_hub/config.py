@@ -55,20 +55,6 @@ class HubConfig:
             "environ_required": False,
         },
     )
-    vendor_install_path: Optional[Path] = dataclasses.field(
-        default=None,
-        metadata={
-            "documentation": (
-                "Filesystem path to a directory that may exist which is used as root "
-                "for installing all vendor programs specified in the "
-                "vendor installers config.\n\n"
-                "Only required if the vendor installers config is specified."
-            ),
-            "environ": Environ.VENDOR_INSTALL_PATH,
-            "environ_cast": Path,
-            "environ_required": False,
-        },
-    )
 
     @classmethod
     def from_environment(cls) -> "HubConfig":

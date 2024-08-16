@@ -186,13 +186,9 @@ class BaseParser:
         if vendor_path and not vendor_path.exists():
             LOGGER.error(f"Found non-existing vendor installer config '{vendor_path}'")
         elif vendor_path:
-            vendor_install_dir = self._config.vendor_install_path
-            vendor_install_dir.mkdir(exist_ok=True)
-
             LOGGER.info(f"reading vendor installers '{vendor_path}'")
             vendor_installers = knots_hub.installer.read_vendor_installers_from_file(
                 file_path=vendor_path,
-                install_root_path=vendor_install_dir,
             )
             LOGGER.info(f"found {len(vendor_installers)} vendor installers.")
 
@@ -379,10 +375,24 @@ class UninstallParser(BaseParser):
 
         uninstalled = False
 
-        if self._config.vendor_install_path:
-            LOGGER.info(f"removing '{self._config.vendor_install_path}'")
-            rmtree(self._config.vendor_install_path)
-            uninstalled = True
+        vendor_path = self._config.vendor_installers_config_path
+        vendor_installers = []
+        if vendor_path and not vendor_path.exists():
+            LOGGER.error(f"Found non-existing vendor installer config '{vendor_path}'")
+        elif vendor_path:
+            LOGGER.info(f"reading vendor installers '{vendor_path}'")
+            vendor_installers = knots_hub.installer.read_vendor_installers_from_file(
+                file_path=vendor_path,
+            )
+
+        for vendor_installer in vendor_installers:
+            for dir_path in [
+                vendor_installer.install_dir
+            ] + vendor_installer.dirs_to_make:
+                if dir_path.exists():
+                    LOGGER.info(f"removing vendor '{dir_path}'")
+                    rmtree(dir_path)
+                    uninstalled = True
 
         if self._filesystem.is_installed:
             LOGGER.info(f"about to uninstall hub at '{self._filesystem.root}'")

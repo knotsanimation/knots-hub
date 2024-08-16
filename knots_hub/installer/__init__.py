@@ -13,6 +13,7 @@ __all__ = [
     "RezVendorInstaller",
     "read_vendor_installers_from_file",
     "SUPPORTED_INSTALLERS",
+    "SUPPORTED_INSTALLERS_DOCUMENTATION",
 ]
 
 from ._shortcut import create_exe_shortcut
@@ -28,3 +29,4 @@ from ._rez import RezVendorInstaller
 
 from ._io import read_vendor_installers_from_file
 from ._io import SUPPORTED_INSTALLERS
+from ._io import SUPPORTED_INSTALLERS_DOCUMENTATION
