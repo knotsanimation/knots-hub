@@ -1,9 +1,5 @@
 import json
 import logging
-import os
-import shutil
-import sys
-import tempfile
 import time
 from pathlib import Path
 from typing import Dict
@@ -13,10 +9,10 @@ from typing import Tuple
 
 import pythonning.filesystem
 
-import knots_hub
-from knots_hub import OS
-from knots_hub.filesystem import HubInstallFilesystem
-
+from knots_hub.filesystem import HubLocalFilesystem
+from knots_hub.filesystem import find_hub_executable
+from knots_hub.installer import HubInstallFile
+from knots_hub.installer.vendors import BaseVendorInstaller
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,89 +77,114 @@ class HubInstallersList:
         return filtered[0][1]
 
 
-def is_hub_up_to_date(installer_list: Optional[HubInstallersList]) -> bool:
+def is_hub_up_to_date(
+    installer_list: Optional[HubInstallersList],
+    filesystem: HubLocalFilesystem,
+) -> bool:
     """
     Return True if the current hub version doesn't need update.
+
+    Args:
+        installer_list: collection of hub installers to chekc against
+        filesystem: collection of paths for storing runtime data
     """
-    if not installer_list:
+    hubinstall_path = filesystem.hubinstallfile_path
+    if not installer_list or not hubinstall_path.exists():
         return True
 
-    return knots_hub.__version__ == installer_list.last_version
+    hubinstall = HubInstallFile.read_from_disk(hubinstall_path)
+    return hubinstall.installed_version == installer_list.last_version
+
+
+def get_hub_local_executable(filesystem: HubLocalFilesystem) -> Optional[Path]:
+    """
+    Find the filesystem path to the locally installed hub executable file.
+
+    Args:
+        filesystem: collection of paths for storing runtime data
+
+    Returns:
+        filesystem path to an existing file or None if not found.
+    """
+    hubinstall_path = filesystem.hubinstallfile_path
+    if not hubinstall_path.exists():
+        return None
+    hubinstall = HubInstallFile.read_from_disk(hubinstall_path)
+    install_dir = hubinstall.installed_path
+    return find_hub_executable(install_dir)
 
 
 def install_hub(
     install_src_path: Path,
-    filesystem: HubInstallFilesystem,
+    install_dst_path: Path,
+    installed_version: str,
+    filesystem: HubLocalFilesystem,
 ) -> Path:
     """
     Args:
-        install_src_path: filesystem path to an existing directory or existing zip file.
-        filesystem: determine where to install
+        install_src_path:
+            filesystem path to a directory which correspond to the new hub to install.
+        install_dst_path:
+            filesystem path to the directory location to install the hub to.
+        installed_version: the hub version that is being installed
+        filesystem: collection of paths for storing runtime data
 
     Returns:
         filesystem path to the installed hub executable
     """
-    filesystem.root.mkdir(exist_ok=True)
-    pythonning.filesystem.copy_path_to(install_src_path, filesystem.install_src_dir)
-    if install_src_path.is_file():
-        installed_file = filesystem.install_src_dir / install_src_path.name
-        LOGGER.debug(f"extracting zip archive '{installed_file}'")
-        pythonning.filesystem.extract_zip(installed_file)
+    pythonning.filesystem.copy_path_to(install_src_path, install_dst_path)
+    hubinstallfile = HubInstallFile(
+        installed_time=time.time(),
+        installed_version=installed_version,
+        installed_path=install_dst_path,
+    )
+    hubinstallfile_path = filesystem.hubinstallfile_path
+    hubinstallfile.update_disk(hubinstallfile_path)
+    return find_hub_executable(install_dst_path)
 
-    filesystem.hubinstall_path.write_text(str(time.time()))
-    return filesystem.current_exe_src
 
-
-def uninstall_hub(filesystem: HubInstallFilesystem):
+def install_vendors(
+    vendors: list[BaseVendorInstaller],
+    filesystem: HubLocalFilesystem,
+) -> list[Path]:
     """
-    Exit the hub and uninstall it from the filesystem.
+    Install OR update the vendor as configured by the user.
 
     Args:
-        filesystem: determine what filesystem data to uninstall
-    """
-    prefix = f"{knots_hub.__name__}_uninstall"
-
-    # we will let the system automatically delete the tmp directory
-    uninstall_dir = Path(tempfile.mkdtemp(prefix=f"{prefix}_"))
-
-    if OS.is_windows():
-        script_path = uninstall_dir / "uninstall.bat"
-        script_path.write_text(f'RMDIR /S /Q "{filesystem.root}"', encoding="utf-8")
-        exe = str(script_path)
-        argv = [exe]
-    else:
-        script_path = uninstall_dir / "uninstall.sh"
-        bash_path = shutil.which("bash")
-        script_path.write_text(f'rmdir -rf "{filesystem.root}"', encoding="utf-8")
-        exe = str(bash_path)
-        # TODO: not sure we need the prefix
-        argv = [prefix, str(script_path)]
-
-    LOGGER.debug(f"os.execv({exe}, {argv})")
-
-    # we copy the logs to help debugging potential uninstalling issues
-    if filesystem.log_path.exists():
-        shutil.copy(filesystem.log_path, uninstall_dir)
-
-    sys.exit(os.execv(exe, argv))
-
-
-def update_hub(
-    update_src_path: Path,
-    filesystem: HubInstallFilesystem,
-) -> Path:
-    """
-    Args:
-        update_src_path: filesystem path to an existing directory or existing zip file.
-        filesystem: determine where to update
+        vendors: list of vendor software to install/update.
+        filesystem: collection of paths for storing runtime data
 
     Returns:
-        filesystem path to the updated hub executable
+        list of existing filesystem paths that have been created for the installation.
+        those paths can be removed to uninstall the software.
     """
-    pythonning.filesystem.copy_path_to(update_src_path, filesystem.install_new_dir)
-    if update_src_path.is_file():
-        installed_file = filesystem.install_src_dir / update_src_path.name
-        LOGGER.debug(f"extracting zip archive '{installed_file}'")
-        pythonning.filesystem.extract_zip(installed_file)
+    installed_paths = []
 
-    return filesystem.current_exe_new
+    # install vendors
+    for vendor_installer in vendors:
+        if vendor_installer.version_installed == vendor_installer.version:
+            LOGGER.debug(f"{vendor_installer} is up-to-date")
+            continue
+
+        if vendor_installer.is_installed:
+            # we uninstall so we can install the latest version
+            LOGGER.info(f"uninstalling {vendor_installer}")
+            vendor_installer.uninstall()
+
+        LOGGER.info(f"installing {vendor_installer}")
+        vendor_installer.install()
+
+        installed_paths.append(vendor_installer.install_dir)
+        installed_paths += vendor_installer.dirs_to_make
+
+    if not installed_paths:
+        # all vendors were up-to-date
+        return []
+
+    hubinstallfile = HubInstallFile(
+        additional_paths=installed_paths,
+    )
+    hubinstallfile_path = filesystem.hubinstallfile_path
+    hubinstallfile.update_disk(hubinstallfile_path)
+
+    return installed_paths

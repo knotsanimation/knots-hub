@@ -20,8 +20,8 @@ def main(argv: Optional[List[str]] = None, logging_configuration: bool = False):
     """
 
     config = knots_hub.HubConfig.from_environment()
-    filesystem = knots_hub.HubInstallFilesystem(root=config.local_install_path)
-    filesystem.root.mkdir(exist_ok=True)
+    filesystem = knots_hub.HubLocalFilesystem()
+    filesystem.root_dir.mkdir(exist_ok=True)
 
     cli = knots_hub.get_cli(argv=argv, config=config, filesystem=filesystem)
 
@@ -34,7 +34,8 @@ def main(argv: Optional[List[str]] = None, logging_configuration: bool = False):
         )
 
     LOGGER.debug(
-        f"starting {knots_hub.__name__} v{knots_hub.__version__} (frozen={IS_APP_FROZEN})"
+        f"starting {knots_hub.__name__} v{knots_hub.__version__} "
+        f"(frozen={IS_APP_FROZEN})(exe={sys.executable})"
     )
     LOGGER.debug(f"retrieved cli with args={cli._args}")
     LOGGER.debug(f"config={config}")
