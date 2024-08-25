@@ -1,8 +1,6 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict
-from typing import List
 from typing import Type
 
 from ._base import BaseVendorInstaller
@@ -11,7 +9,7 @@ from knots_hub._utils import expand_envvars
 
 LOGGER = logging.getLogger(__name__)
 
-SUPPORTED_INSTALLERS: Dict[str, Type[BaseVendorInstaller]] = {
+SUPPORTED_INSTALLERS: dict[str, Type[BaseVendorInstaller]] = {
     RezVendorInstaller.name(): RezVendorInstaller,
 }
 """
@@ -43,7 +41,7 @@ SUPPORTED_INSTALLERS_DOCUMENTATION = {
 
 def read_vendor_installers_from_file(
     file_path: Path,
-) -> List[BaseVendorInstaller]:
+) -> list[BaseVendorInstaller]:
     """
     Get a list of installer from a serialized representation.
 

@@ -2,10 +2,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 import pythonning.filesystem
 
@@ -27,7 +24,7 @@ class HubInstallersList:
     i.e. packaged as self-isolated executable.
     """
 
-    def __init__(self, content: List[Tuple[str, Path]]):
+    def __init__(self, content: list[tuple[str, Path]]):
         self._content = content
 
     @property
@@ -62,7 +59,7 @@ class HubInstallersList:
             return pathed.absolute().resolve()
 
         with path.open("r", encoding="utf-8") as file:
-            raw_content: Dict[str, str] = json.load(file)
+            raw_content: dict[str, str] = json.load(file)
 
         # ensure versions are always sorted with the latest version last in the list
         content = sorted(raw_content.items(), key=_sort_key)

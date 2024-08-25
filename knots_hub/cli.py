@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import sys
-from typing import List
 from typing import Type
 
 import kloch
@@ -26,9 +25,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 def get_restart_args(
-    current_argv: List[str],
+    current_argv: list[str],
     restarted_amount: int = 0,
-) -> List[str]:
+) -> list[str]:
     """
     Get the args to pass to ``os.exec*``
     """
@@ -64,10 +63,10 @@ class BaseParser:
     def __init__(
         self,
         args: argparse.Namespace,
-        original_argv: List[str],
+        original_argv: list[str],
         config: HubConfig,
         filesystem: HubLocalFilesystem,
-        extra_args: List[str],
+        extra_args: list[str],
     ):
         self._args: argparse.Namespace = args
         self._original_argv = original_argv
@@ -320,7 +319,7 @@ class UninstallParser(BaseParser):
 def get_cli(
     config: HubConfig,
     filesystem: HubLocalFilesystem,
-    argv: List[str] = None,
+    argv: list[str] = None,
 ) -> BaseParser:
     """
     Return the command line interface generated from user arguments provided.
@@ -350,7 +349,7 @@ def get_cli(
     )
     UninstallParser.add_to_parser(subparser)
 
-    argv: List[str] = sys.argv[1:] if argv is None else argv.copy()
+    argv: list[str] = sys.argv[1:] if argv is None else argv.copy()
     # allow unknown args for the `kloch` command
     args, extra_args = parser.parse_known_args(argv)
     cli_class: Type[BaseParser] = args.func
