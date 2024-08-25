@@ -15,25 +15,25 @@ from knots_hub.installer import HubInstallFile
 LOGGER = logging.getLogger(__name__)
 
 
-def uninstall_paths(paths: list[Path], logs_path: Optional[Path] = None):
+def uninstall_paths(paths: list[Path]):
     """
     Exit the hub and remove anything file related to knots-hub from the filesystem.
 
     Args:
         paths: list of existing filesystem path to remove
-        logs_path: optional path to a log file to copy. For debugging purpose.
     """
     prefix = f"{knots_hub.__name__}_uninstall"
 
     # we will let the system automatically delete the tmp directory
     uninstall_dir = Path(tempfile.mkdtemp(prefix=f"{prefix}_"))
 
-    # TODO add command that self-delete the temp directory
-
     if OS.is_windows():
         script_path = uninstall_dir / "uninstall.bat"
         content = [
             f'{"RMDIR" if path.is_dir() else "DEL"} /S /Q "{path}"' for path in paths
+        ]
+        content += [
+            f'start /b "" cmd /C RMDIR /S /Q "{uninstall_dir}"',
         ]
         script_path.write_text("\n".join(content), encoding="utf-8")
         exe = str(script_path)
@@ -48,10 +48,6 @@ def uninstall_paths(paths: list[Path], logs_path: Optional[Path] = None):
         argv = [prefix, str(script_path)]
 
     LOGGER.debug(f"os.execv({exe}, {argv})")
-
-    # we copy the logs to help debugging potential uninstalling issues
-    if logs_path and logs_path.exists():
-        shutil.copy(logs_path, uninstall_dir)
 
     sys.exit(os.execv(exe, argv))
 

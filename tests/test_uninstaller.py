@@ -1,7 +1,7 @@
 import os
 import subprocess
 import tempfile
-from pathlib import Path
+import time
 from typing import List
 
 import pytest
@@ -26,8 +26,6 @@ def test__uninstall_paths(tmp_path, monkeypatch):
 
     install_dir = tmp_path / ".hubinstall"
     install_dir.mkdir()
-    src_log = tmp_path / "hub.log"
-    src_log.write_text("🐍🐍🐍", encoding="utf-8")
     # just so it's not empty
     random_file = install_dir / "randomfile1.txt"
     random_file.write_text("🦎", encoding="utf-8")
@@ -35,9 +33,11 @@ def test__uninstall_paths(tmp_path, monkeypatch):
     random_file2.write_text("✨", encoding="utf-8")
 
     with pytest.raises(SystemExit):
-        uninstall_paths(paths=[install_dir, random_file2], logs_path=src_log)
+        uninstall_paths(paths=[install_dir, random_file2])
     assert not install_dir.exists()
     assert not random_file.exists()
     assert not random_file2.exists()
-    assert src_log.exists()  # (not removed)
-    assert Path(tmppatched, src_log.name).exists()
+
+    # the deletion is parallel so wait for it to catchup
+    time.sleep(0.5)
+    assert not tmppatched.exists()
