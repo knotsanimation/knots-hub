@@ -115,7 +115,7 @@ def install_hub(
     install_src_path: Path,
     install_dst_path: Path,
     installed_version: str,
-    filesystem: HubLocalFilesystem,
+    hubinstallfile_path: Path,
 ) -> Path:
     """
     Args:
@@ -124,7 +124,7 @@ def install_hub(
         install_dst_path:
             filesystem path to the directory location to install the hub to.
         installed_version: the hub version that is being installed
-        filesystem: collection of paths for storing runtime data
+        hubinstallfile_path: filesystem path the hubinstall file
 
     Returns:
         filesystem path to the installed hub executable
@@ -135,7 +135,6 @@ def install_hub(
         installed_version=installed_version,
         installed_path=install_dst_path,
     )
-    hubinstallfile_path = filesystem.hubinstallfile_path
     hubinstallfile.update_disk(hubinstallfile_path)
     return find_hub_executable(install_dst_path)
 

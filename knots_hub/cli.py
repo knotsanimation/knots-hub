@@ -150,7 +150,7 @@ class BaseParser:
                         install_src_path=src_path,
                         install_dst_path=dst_path,
                         installed_version=installer_list.last_version,
-                        filesystem=self._filesystem,
+                        hubinstallfile_path=self._filesystem.hubinstallfile_path,
                     )
                 shortcut = knots_hub.installer.create_exe_shortcut(
                     shortcut_dir=self._filesystem.shortcut_dir,
