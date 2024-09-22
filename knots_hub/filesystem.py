@@ -99,7 +99,7 @@ class HubLocalFilesystem:
 
     def __init__(self, root_dir: Optional[Path] = None):
         self._root_dir: Path = root_dir or _DEFAULT_ROOT_DIR
-        self._hubinstallfile_path: Path = self._root_dir / ".hubinstall"
+        self._hubrecord_path: Path = self._root_dir / ".hubinstall"
         self._log_path: Path = self._root_dir / "hub.log"
         self._shortcut_dir: Path = self._root_dir
 
@@ -120,11 +120,11 @@ class HubLocalFilesystem:
         return self._root_dir
 
     @property
-    def hubinstallfile_path(self) -> Path:
+    def hubinstall_record_path(self) -> Path:
         """
         Filesystem path to a file that may not exist yet. Used to store install metadata.
         """
-        return self._hubinstallfile_path
+        return self._hubrecord_path
 
     @property
     def log_path(self) -> Path:
@@ -142,4 +142,4 @@ class HubLocalFilesystem:
 
     @property
     def is_hub_installed(self) -> bool:
-        return self.hubinstallfile_path.exists()
+        return self.hubinstall_record_path.exists()

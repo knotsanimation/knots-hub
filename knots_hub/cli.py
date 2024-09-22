@@ -14,7 +14,7 @@ import knots_hub.installer
 from knots_hub import HubConfig
 from knots_hub import HubLocalFilesystem
 from knots_hub.filesystem import is_runtime_from_local_install
-from knots_hub.installer import HubInstallFile
+from knots_hub.installer import HubInstallRecord
 from knots_hub.installer import HubInstallersList
 from knots_hub.installer import VendorInstallRecord
 from knots_hub.installer import get_hub_local_executable
@@ -137,12 +137,12 @@ class BaseParser:
                 and self._filesystem.is_hub_installed
                 and not is_runtime_local
             ):
-                hubinstall_file_path = self._filesystem.hubinstallfile_path
-                hubinstall_file = HubInstallFile.read_from_disk(hubinstall_file_path)
-                if installer_list.last_version != hubinstall_file.installed_version:
+                hubrecord_path = self._filesystem.hubinstall_record_path
+                hubrecord_file = HubInstallRecord.read_from_disk(hubrecord_path)
+                if installer_list.last_version != hubrecord_file.installed_version:
                     need_install = True
                     LOGGER.debug("uninstalling existing hub for upcoming update")
-                    uninstall_hub_only(hubinstall_file)
+                    uninstall_hub_only(hubrecord_file)
 
             if need_install:
                 src_path = installer_list.last_path
@@ -153,7 +153,7 @@ class BaseParser:
                         install_src_path=src_path,
                         install_dst_path=dst_path,
                         installed_version=installer_list.last_version,
-                        hubinstallfile_path=self._filesystem.hubinstallfile_path,
+                        hubrecord_path=self._filesystem.hubinstall_record_path,
                     )
                 shortcut = knots_hub.installer.create_exe_shortcut(
                     shortcut_dir=self._filesystem.shortcut_dir,
@@ -187,9 +187,9 @@ class BaseParser:
             vendors2install.update({vendor.name(): vendor for vendor in vendors})
 
         # we are sure the path exists as vendor happens after hub install/update
-        hubinstall_file_path = self._filesystem.hubinstallfile_path
-        hubinstall_file = HubInstallFile.read_from_disk(hubinstall_file_path)
-        vendor_installed_paths = hubinstall_file.vendors_record_paths
+        hubrecord_path = self._filesystem.hubinstall_record_path
+        hubrecord_file = HubInstallRecord.read_from_disk(hubrecord_path)
+        vendor_installed_paths = hubrecord_file.vendors_record_paths
         if vendor_installed_paths:
             # vendor that were installed previously but that we don't install anymore
             vendors2uninstall = set(vendor_installed_paths.keys()).difference(
@@ -229,10 +229,10 @@ class BaseParser:
                 vendors_record_paths[vendor_name] = vendor_record_path
 
             LOGGER.info(
-                f"updating hub records '{hubinstall_file_path}' with installed vendors"
+                f"updating hub records '{hubrecord_path}' with installed vendors"
             )
-            HubInstallFile(vendors_record_paths=vendors_record_paths).update_disk(
-                hubinstall_file_path
+            HubInstallRecord(vendors_record_paths=vendors_record_paths).update_disk(
+                hubrecord_path
             )
 
     @classmethod

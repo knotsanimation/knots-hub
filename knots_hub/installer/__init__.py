@@ -9,7 +9,7 @@ __all__ = [
     "install_hub",
     "install_vendor",
     "HubInstallersList",
-    "HubInstallFile",
+    "HubInstallRecord",
     "BaseVendorInstaller",
     "RezVendorInstaller",
     "read_vendor_installer_from_file",
@@ -21,7 +21,7 @@ __all__ = [
 
 from ._shortcut import create_exe_shortcut
 
-from ._hubinstallfile import HubInstallFile
+from ._hubrecord import HubInstallRecord
 from ._vendorrecord import VendorInstallRecord
 
 from ._hub import HubInstallersList

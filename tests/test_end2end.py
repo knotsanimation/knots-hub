@@ -35,7 +35,7 @@ def test__main__no_installers(monkeypatch, tmp_path, caplog):
     monkeypatch.setattr(knots_hub.filesystem, "_DEFAULT_ROOT_DIR", root_dir)
 
     # we fake a local install already happened
-    hubinstall = knots_hub.installer.HubInstallFile(2, "1", root_dir, {})
+    hubinstall = knots_hub.installer.HubInstallRecord(2, "1", root_dir, {})
     hubinstall_path = root_dir / ".hubinstall"
     hubinstall.write_to_disk(hubinstall_path)
 

@@ -9,7 +9,7 @@ import knots_hub
 from knots_hub import HubLocalFilesystem
 from knots_hub import OS
 from knots_hub.filesystem import rmtree
-from knots_hub.installer import HubInstallFile
+from knots_hub.installer import HubInstallRecord
 from knots_hub.installer import VendorInstallRecord
 
 LOGGER = logging.getLogger(__name__)
@@ -67,11 +67,11 @@ def get_paths_to_uninstall(filesystem: HubLocalFilesystem) -> list[Path]:
     """
     to_uninstall = []
 
-    hubinstall_path = filesystem.hubinstallfile_path
-    hubinstall = HubInstallFile.read_from_disk(hubinstall_path)
-    paths = [hubinstall.installed_path] + [filesystem.root_dir]
+    hubrecord_path = filesystem.hubinstall_record_path
+    hubrecord = HubInstallRecord.read_from_disk(hubrecord_path)
+    paths = [hubrecord.installed_path] + [filesystem.root_dir]
 
-    for vendorrecord_path in hubinstall.vendors_record_paths.values():
+    for vendorrecord_path in hubrecord.vendors_record_paths.values():
         vendorrecord = VendorInstallRecord.read_from_disk(vendorrecord_path)
         paths += [vendorrecord.installed_path] + vendorrecord.extra_paths
 
@@ -83,7 +83,7 @@ def get_paths_to_uninstall(filesystem: HubLocalFilesystem) -> list[Path]:
     return to_uninstall
 
 
-def uninstall_hub_only(hubinstall_file: HubInstallFile):
+def uninstall_hub_only(hubinstall_file: HubInstallRecord):
     """
     Only uninstall the hub but not the vendors or additional paths.
     """

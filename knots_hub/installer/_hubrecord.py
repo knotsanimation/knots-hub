@@ -10,9 +10,8 @@ from knots_hub.serializelib import UninitializedType
 LOGGER = logging.getLogger(__name__)
 
 
-# TODO rename to HubInstallRecord
 @dataclasses.dataclass
-class HubInstallFile:
+class HubInstallRecord:
     """
     A datastructure to manipulate the metadata stored along the local hub install.
 
@@ -42,7 +41,7 @@ class HubInstallFile:
     """
 
     @classmethod
-    def read_from_disk(cls, path: Path) -> "HubInstallFile":
+    def read_from_disk(cls, path: Path) -> "HubInstallRecord":
         """
         Create an instance from a serialized disk file.
 
