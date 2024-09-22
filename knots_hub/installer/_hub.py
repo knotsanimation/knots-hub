@@ -9,7 +9,6 @@ import pythonning.filesystem
 from knots_hub.filesystem import HubLocalFilesystem
 from knots_hub.filesystem import find_hub_executable
 from knots_hub.installer import HubInstallFile
-from knots_hub.installer.vendors import BaseVendorInstaller
 
 LOGGER = logging.getLogger(__name__)
 
@@ -108,6 +107,9 @@ def get_hub_local_executable(filesystem: HubLocalFilesystem) -> Optional[Path]:
         return None
     hubinstall = HubInstallFile.read_from_disk(hubinstall_path)
     install_dir = hubinstall.installed_path
+    if not install_dir:
+        LOGGER.warning("Found local HubInstallFile with null 'installed_path'")
+        return None
     return find_hub_executable(install_dir)
 
 
@@ -137,50 +139,3 @@ def install_hub(
     )
     hubinstallfile.update_disk(hubinstallfile_path)
     return find_hub_executable(install_dst_path)
-
-
-def install_vendors(
-    vendors: list[BaseVendorInstaller],
-    filesystem: HubLocalFilesystem,
-) -> list[Path]:
-    """
-    Install OR update the vendor as configured by the user.
-
-    Args:
-        vendors: list of vendor software to install/update.
-        filesystem: collection of paths for storing runtime data
-
-    Returns:
-        list of existing filesystem paths that have been created for the installation.
-        those paths can be removed to uninstall the software.
-    """
-    installed_paths = []
-
-    # install vendors
-    for vendor_installer in vendors:
-        if vendor_installer.version_installed == vendor_installer.version:
-            LOGGER.debug(f"{vendor_installer} is up-to-date")
-            continue
-
-        if vendor_installer.is_installed:
-            # we uninstall so we can install the latest version
-            LOGGER.info(f"uninstalling {vendor_installer}")
-            vendor_installer.uninstall()
-
-        LOGGER.info(f"installing {vendor_installer}")
-        vendor_installer.install()
-
-        installed_paths.append(vendor_installer.install_dir)
-        installed_paths += vendor_installer.dirs_to_make
-
-    if not installed_paths:
-        # all vendors were up-to-date
-        return []
-
-    hubinstallfile = HubInstallFile(
-        additional_paths=installed_paths,
-    )
-    hubinstallfile_path = filesystem.hubinstallfile_path
-    hubinstallfile.update_disk(hubinstallfile_path)
-
-    return installed_paths

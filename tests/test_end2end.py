@@ -10,7 +10,6 @@ from typing import List
 import pytest
 
 import knots_hub.__main__
-from knots_hub import HubLocalFilesystem
 
 
 def test__main__config(tmp_path, monkeypatch):
@@ -32,7 +31,13 @@ def test__main__no_installers(monkeypatch, tmp_path, caplog):
     install_dir = tmp_path / "hub"
     monkeypatch.setenv(knots_hub.Environ.USER_INSTALL_PATH, str(install_dir))
     root_dir = tmp_path / "knots-hub"
+    root_dir.mkdir()
     monkeypatch.setattr(knots_hub.filesystem, "_DEFAULT_ROOT_DIR", root_dir)
+
+    # we fake a local install already happened
+    hubinstall = knots_hub.installer.HubInstallFile(2, "1", root_dir, {})
+    hubinstall_path = root_dir / ".hubinstall"
+    hubinstall.write_to_disk(hubinstall_path)
 
     argv = []
     with pytest.raises(SystemExit):
@@ -63,14 +68,15 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     os.mkdir(tmp_path / "v999")
     Path(tmp_path, "v999", exe_name).write_text("fake executable")
 
+    # we intentionally add a useless extra nested dir
+    vendor_root = tmp_path / ".vendorroot"
     vendor_install_dir = tmp_path / "vendor"
     rez_install_dir = vendor_install_dir / "rez"
 
     vendor_config = {
         "rez": {
-            "version": 1,
             "install_dir": str(rez_install_dir),
-            "dirs_to_make": [str(vendor_install_dir)],
+            "dirs_to_make": [str(vendor_root), str(vendor_install_dir)],
             "python_version": "3.10.11",
             "rez_version": "2.114.1",
         }
@@ -107,7 +113,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     monkeypatch.setenv(knots_hub.Environ.USER_INSTALL_PATH, str(install_dir))
     monkeypatch.setenv(knots_hub.Environ.INSTALLER_LIST_PATH, str(installers_path))
     monkeypatch.setenv(
-        knots_hub.Environ.VENDOR_INSTALLERS_CONFIG_PATH, str(vendor_config_path)
+        knots_hub.Environ.VENDOR_INSTALLER_CONFIG_PATHS, str(vendor_config_path)
     )
 
     data_root_dir = tmp_path / "knots-hub.data"

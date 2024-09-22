@@ -1,48 +1,49 @@
 import dataclasses
 import logging
 from pathlib import Path
-from typing import Union
-
 from knots_hub import serializelib
-from knots_hub.serializelib import UninitializedType
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-# TODO rename to HubInstallRecord
 @dataclasses.dataclass
-class HubInstallFile:
+class VendorInstallRecord:
     """
-    A datastructure to manipulate the metadata stored along the local hub install.
+    A datastructure to record how a vendor was installed on the local system.
 
     The datastructure can be serialized and unserialized from disk.
     """
 
-    installed_time: Union[float, UninitializedType] = serializelib.FloatField()
+    name: str = serializelib.StrField()
     """
-    Time since epoch at which the hub was last installed.
-    """
-
-    installed_version: Union[str, UninitializedType] = serializelib.StrField()
-    """
-    Currently installed version of the hub.
+    Name of the vendor that is installed.
     """
 
-    installed_path: Union[Path, UninitializedType] = serializelib.PathField()
+    installed_time: float = serializelib.FloatField()
     """
-    Filesystem path to the installation directory of the hub.
+    Time since epoch at which the vendor was last installed.
     """
 
-    vendors_record_paths: Union[dict[str, Path], UninitializedType] = (
-        serializelib.DictOfStrNPathField()
-    )
+    install_hash: str = serializelib.StrField()
     """
-    A mapping of vendor names installed, and their vendor installation record path.
+    A hash to validate if the current install is up to date.
+    """
+
+    installed_path: Path = serializelib.PathField()
+    """
+    Filesystem path to the installation directory of the vendor.    
+    """
+
+    extra_paths: list[Path] = serializelib.PathListField()
+    """
+    A list of extra paths created for the install of the vendor.
+    
+    They need to be removed on uninstallation.
     """
 
     @classmethod
-    def read_from_disk(cls, path: Path) -> "HubInstallFile":
+    def read_from_disk(cls, path: Path) -> "VendorInstallRecord":
         """
         Create an instance from a serialized disk file.
 

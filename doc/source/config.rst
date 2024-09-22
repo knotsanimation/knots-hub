@@ -1,5 +1,5 @@
-Configuration
-=============
+Configurations
+==============
 
 
 Tweak the behavior of the knots-hub runtime using a configuration system.
@@ -29,16 +29,13 @@ must be configured.
 
 The abstract configuration is defined as:
 
-.. tip::
-
-   If needed, the reading of the configuration is performed by :func:`knots_hub.installer.read_vendor_installers_from_file`
-
 .. code-block::
 
    {
       "{installer_name}": {
          ...  # installer configuration arguments
       },
+      # next installer
       ...
    }
 
@@ -47,9 +44,3 @@ The list of supported installers and their configuration is as follow:
 .. exec-inject::
    :filename: _injected/exec-config-vendor-installers.py
 
-
-.. warning::
-
-   Changing the ``install_dir`` for any installer will have the known side-effect
-   of not removing the old ``install_dir`` on the local user machine if the user
-   ever uninstall the hub in the future. Same for the ``dirs_to_make`` argument.

@@ -13,6 +13,10 @@ from knots_hub.constants import Environ
 LOGGER = logging.getLogger(__name__)
 
 
+def _cast_path_list(value) -> list[Path]:
+    return [Path(path) for path in value.split(os.pathsep)]
+
+
 @dataclasses.dataclass
 class HubConfig:
     """
@@ -43,15 +47,15 @@ class HubConfig:
             "environ_required": False,
         },
     )
-    vendor_installers_config_path: Optional[Path] = dataclasses.field(
-        default=None,
+    vendor_installer_config_paths: list[Path] = dataclasses.field(
+        default_factory=list,
         metadata={
             "documentation": (
                 "Filesystem path to an existing json file used to specify which "
                 "external program to install with which version."
             ),
-            "environ": Environ.VENDOR_INSTALLERS_CONFIG_PATH,
-            "environ_cast": Path,
+            "environ": Environ.VENDOR_INSTALLER_CONFIG_PATHS,
+            "environ_cast": _cast_path_list,
             "environ_required": False,
         },
     )

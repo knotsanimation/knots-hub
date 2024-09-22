@@ -4,13 +4,13 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 import knots_hub
 from knots_hub import HubLocalFilesystem
 from knots_hub import OS
 from knots_hub.filesystem import rmtree
 from knots_hub.installer import HubInstallFile
+from knots_hub.installer import VendorInstallRecord
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +26,9 @@ def uninstall_paths(paths: list[Path]):
 
     # we will let the system automatically delete the tmp directory
     uninstall_dir = Path(tempfile.mkdtemp(prefix=f"{prefix}_"))
+
+    # XXX: we cannot guarantee that all path exists at the exact moment they are deleted.
+    #   example if paths=["/foo", "/foo/bar"], "/foo" being deleted first, we can't delete "/foo/bar".
 
     if OS.is_windows():
         script_path = uninstall_dir / "uninstall.bat"
@@ -66,14 +69,14 @@ def get_paths_to_uninstall(filesystem: HubLocalFilesystem) -> list[Path]:
 
     hubinstall_path = filesystem.hubinstallfile_path
     hubinstall = HubInstallFile.read_from_disk(hubinstall_path)
-    paths = (
-        [hubinstall.installed_path]
-        + hubinstall.additional_paths
-        + [filesystem.root_dir]
-    )
+    paths = [hubinstall.installed_path] + [filesystem.root_dir]
+
+    for vendorrecord_path in hubinstall.vendors_record_paths.values():
+        vendorrecord = VendorInstallRecord.read_from_disk(vendorrecord_path)
+        paths += [vendorrecord.installed_path] + vendorrecord.extra_paths
 
     for path in paths:
-        if not path.exists():
+        if not path or not path.exists():
             continue
         to_uninstall.append(path)
 

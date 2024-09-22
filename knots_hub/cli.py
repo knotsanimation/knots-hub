@@ -16,7 +16,10 @@ from knots_hub import HubLocalFilesystem
 from knots_hub.filesystem import is_runtime_from_local_install
 from knots_hub.installer import HubInstallFile
 from knots_hub.installer import HubInstallersList
+from knots_hub.installer import VendorInstallRecord
 from knots_hub.installer import get_hub_local_executable
+from knots_hub.installer import read_vendor_installer_from_file
+from knots_hub.installer import uninstall_vendor
 from knots_hub.uninstaller import get_paths_to_uninstall
 from knots_hub.uninstaller import uninstall_hub_only
 from knots_hub.uninstaller import uninstall_paths
@@ -173,18 +176,63 @@ class BaseParser:
         # > reaching here mean the runtime is local
 
         # install or update vendor programs
-        vendor_path = self._config.vendor_installers_config_path
-        if vendor_path and not vendor_path.exists():
-            LOGGER.error(f"Found non-existing vendor installer config '{vendor_path}'")
-        elif vendor_path:
-            LOGGER.debug(f"reading vendor installers '{vendor_path}'")
-            vendor_installers = knots_hub.installer.read_vendor_installers_from_file(
-                file_path=vendor_path,
+
+        vendors2install = {}
+        vendor_config_paths = self._config.vendor_installer_config_paths
+        for vendor_path in vendor_config_paths:
+            if not vendor_path.exists():
+                LOGGER.error(f"Non-existing vendor installer '{vendor_path}'")
+                continue
+            vendors = read_vendor_installer_from_file(vendor_path)
+            vendors2install.update({vendor.name(): vendor for vendor in vendors})
+
+        # we are sure the path exists as vendor happens after hub install/update
+        hubinstall_file_path = self._filesystem.hubinstallfile_path
+        hubinstall_file = HubInstallFile.read_from_disk(hubinstall_file_path)
+        vendor_installed_paths = hubinstall_file.vendors_record_paths
+        if vendor_installed_paths:
+            # vendor that were installed previously but that we don't install anymore
+            vendors2uninstall = set(vendor_installed_paths.keys()).difference(
+                vendors2install.keys()
             )
-            LOGGER.debug(f"found {len(vendor_installers)} vendor installers.")
-            knots_hub.installer.install_vendors(
-                vendors=vendor_installers,
-                filesystem=self._filesystem,
+        else:
+            vendor_installed_paths = {}
+            vendors2uninstall = set()
+
+        for vendor2uninstall in vendors2uninstall:
+            vendor_record_path = vendor_installed_paths[vendor2uninstall]
+            if vendor_record_path.exists():
+                vendor_record = VendorInstallRecord.read_from_disk(vendor_record_path)
+                LOGGER.info(f"uninstalling vendor '{vendor_record.name}'")
+                uninstall_vendor(vendor_record)
+            else:
+                # somehow the record path was already deleted externally
+                continue
+
+        if vendors2install:
+            LOGGER.debug(f"found {len(vendors2install)} vendor installers.")
+
+            vendors_record_paths = {}
+
+            for vendor_name, vendor in vendors2install.items():
+
+                vendor_record_path = vendor_installed_paths.get(vendor_name)
+                if not vendor_record_path:
+                    vendor_record_path = vendor.install_record_path
+
+                installed = knots_hub.installer.install_vendor(
+                    vendor=vendor,
+                    record_path=vendor_record_path,
+                )
+                if installed:
+                    LOGGER.info(f"installed vendor '{vendor_name}'")
+                vendors_record_paths[vendor_name] = vendor_record_path
+
+            LOGGER.info(
+                f"updating hub records '{hubinstall_file_path}' with installed vendors"
+            )
+            HubInstallFile(vendors_record_paths=vendors_record_paths).update_disk(
+                hubinstall_file_path
             )
 
     @classmethod

@@ -8,7 +8,7 @@ def test__HubInstallFile__read__write(tmp_path):
     installed_time = time.time()
     installed_version = "3.2.1"
     installed_path = Path(tmp_path)
-    additional_paths = [Path(tmp_path)]
+    records_paths = {"foo": Path(tmp_path)}
 
     dst_path = tmp_path / ".hubinstall"
 
@@ -16,7 +16,7 @@ def test__HubInstallFile__read__write(tmp_path):
         installed_time=installed_time,
         installed_version=installed_version,
         installed_path=installed_path,
-        additional_paths=additional_paths,
+        vendors_record_paths=records_paths,
     )
     instance.write_to_disk(dst_path)
     assert dst_path.exists()
@@ -25,14 +25,14 @@ def test__HubInstallFile__read__write(tmp_path):
     assert instance_read.installed_time == installed_time
     assert instance_read.installed_version == installed_version
     assert instance_read.installed_path == installed_path
-    assert instance_read.additional_paths == additional_paths
+    assert instance_read.vendors_record_paths == records_paths
 
 
 def test__HubInstallFile__update(tmp_path):
     installed_time = time.time()
     installed_version = "3.2.1"
     installed_path = Path(tmp_path)
-    additional_paths = [Path(tmp_path)]
+    records_paths = {"foo": Path(tmp_path)}
 
     dst_path = tmp_path / ".hubinstall"
 
@@ -40,7 +40,7 @@ def test__HubInstallFile__update(tmp_path):
         installed_time=installed_time,
         installed_version=installed_version,
         installed_path=installed_path,
-        additional_paths=additional_paths,
+        vendors_record_paths=records_paths,
     )
     instance.write_to_disk(dst_path)
     assert dst_path.exists()
