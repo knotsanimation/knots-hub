@@ -13,8 +13,27 @@ from knots_hub.constants import Environ
 LOGGER = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class HubInstallerConfig:
+    """
+    Configuration indicating how to install the hub.
+    """
+
+    version: str
+    path: Path
+
+
 def _cast_path_list(value) -> list[Path]:
     return [Path(path) for path in value.split(os.pathsep)]
+
+
+def _cast_installerconfig(value: str) -> HubInstallerConfig:
+    try:
+        version, path = value.split("=", 1)
+    except:
+        LOGGER.error(f"cannot parse value '{value}' to HubInstallerConfig")
+        raise
+    return HubInstallerConfig(version=version, path=Path(path))
 
 
 @dataclasses.dataclass
@@ -34,16 +53,20 @@ class HubConfig:
             "environ_required": True,
         }
     )
-    installer_list_path: Optional[Path] = dataclasses.field(
+    installer: Optional[HubInstallerConfig] = dataclasses.field(
         default=None,
         metadata={
             "documentation": (
-                "Filesystem path to an existing json file used to store a mapping of "
-                "`hub version`: `installer path`. The `installer path` can be a directory"
-                "or a zip archive."
+                "A string providing configuration for the hub installation."
+                "The string is formatted as ``version=path``, where path is a fileystem"
+                "path to an existing directory containing the hub to install, and version"
+                "being the version of the hub corresponding to the path. The version is"
+                "an arbitrary chain of character, usually following semver conventions,"
+                "that is just used to check if the last locally installed version match"
+                "the current installer version."
             ),
-            "environ": Environ.INSTALLER_LIST_PATH,
-            "environ_cast": Path,
+            "environ": Environ.INSTALLER,
+            "environ_cast": _cast_installerconfig,
             "environ_required": False,
         },
     )

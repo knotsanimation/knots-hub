@@ -8,7 +8,6 @@ __all__ = [
     "is_hub_up_to_date",
     "install_hub",
     "install_vendor",
-    "HubInstallersList",
     "HubInstallRecord",
     "BaseVendorInstaller",
     "RezVendorInstaller",
@@ -24,7 +23,6 @@ from ._shortcut import create_exe_shortcut
 from ._hubrecord import HubInstallRecord
 from ._vendorrecord import VendorInstallRecord
 
-from ._hub import HubInstallersList
 from ._hub import is_hub_up_to_date
 from ._hub import get_hub_local_executable
 from ._hub import install_hub

@@ -15,7 +15,6 @@ from knots_hub import HubConfig
 from knots_hub import HubLocalFilesystem
 from knots_hub.filesystem import is_runtime_from_local_install
 from knots_hub.installer import HubInstallRecord
-from knots_hub.installer import HubInstallersList
 from knots_hub.installer import VendorInstallRecord
 from knots_hub.installer import get_hub_local_executable
 from knots_hub.installer import read_vendor_installer_from_file
@@ -122,37 +121,31 @@ class BaseParser:
 
         if not is_runtime_local:
 
-            # an empty installer list imply the hub is never installed/updated locally
-            installer_list = None
-            installer_list_path = self._config.installer_list_path
-            if installer_list_path:
-                installer_list = HubInstallersList.from_file(path=installer_list_path)
-
+            # an empty installer path imply the hub is never installed/updated locally
             need_install = False
+            installer = self._config.installer
 
-            if installer_list and not self._filesystem.is_hub_installed:
+            if installer and not self._filesystem.is_hub_installed:
                 need_install = True
             elif (
-                installer_list
-                and self._filesystem.is_hub_installed
-                and not is_runtime_local
+                installer and self._filesystem.is_hub_installed and not is_runtime_local
             ):
                 hubrecord_path = self._filesystem.hubinstall_record_path
                 hubrecord_file = HubInstallRecord.read_from_disk(hubrecord_path)
-                if installer_list.last_version != hubrecord_file.installed_version:
+                if installer.version != hubrecord_file.installed_version:
                     need_install = True
                     LOGGER.debug("uninstalling existing hub for upcoming update")
                     uninstall_hub_only(hubrecord_file)
 
             if need_install:
-                src_path = installer_list.last_path
+                src_path = installer.path
                 dst_path = local_install_path
                 LOGGER.info(f"installing hub '{src_path}' to '{dst_path}'")
                 with timeit("installing took ", LOGGER.info):
                     exe_path = knots_hub.installer.install_hub(
                         install_src_path=src_path,
                         install_dst_path=dst_path,
-                        installed_version=installer_list.last_version,
+                        installed_version=installer.version,
                         hubrecord_path=self._filesystem.hubinstall_record_path,
                     )
                 shortcut = knots_hub.installer.create_exe_shortcut(

@@ -54,19 +54,11 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
 
     install_dir = tmp_path / "hub"
 
-    last_hub_version = "999.1.0"
-    installers_content = {
-        last_hub_version: "./v999",
-        "0.3.0": str(data_dir / "v0.3"),
-    }
-    installers_path = tmp_path / "installers.json"
-    with installers_path.open("w") as file:
-        json.dump(installers_content, file, indent=4)
+    source_install_dir = tmp_path / "vTest"
+    source_install_dir.mkdir()
 
     exe_name = knots_hub.constants.EXECUTABLE_NAME
-
-    os.mkdir(tmp_path / "v999")
-    Path(tmp_path, "v999", exe_name).write_text("fake executable")
+    Path(source_install_dir, exe_name).write_text("fake executable")
 
     # we intentionally add a useless extra nested dir
     vendor_root = tmp_path / ".vendorroot"
@@ -111,7 +103,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     monkeypatch.setattr(sys, "argv", _patch_sys_argv)
 
     monkeypatch.setenv(knots_hub.Environ.USER_INSTALL_PATH, str(install_dir))
-    monkeypatch.setenv(knots_hub.Environ.INSTALLER_LIST_PATH, str(installers_path))
+    monkeypatch.setenv(knots_hub.Environ.INSTALLER, f"testversion={source_install_dir}")
     monkeypatch.setenv(
         knots_hub.Environ.VENDOR_INSTALLER_CONFIG_PATHS, str(vendor_config_path)
     )

@@ -20,10 +20,9 @@ class Environ:
     Filesystem path to the location on the user system where the hub is installed.
     """
 
-    INSTALLER_LIST_PATH = f"{_ENVPREFIX}_INSTALLER_LIST"
+    INSTALLER = f"{_ENVPREFIX}_INSTALLER"
     """
-    Filesystem path to an existing json file which list all the hub version available
-    with an associated path for download.
+    Expression like 'version=path' indicating configuration for installing the hub.
     """
 
     VENDOR_INSTALLER_CONFIG_PATHS = f"{_ENVPREFIX}_VENDOR_INSTALLER_CONFIG_PATHS"
