@@ -368,6 +368,7 @@ class AboutParser(BaseParser):
     """
 
     def execute(self):
+        super().execute()
         print(f"{knots_hub.__name__} v{knots_hub.__version__}")
         print(
             f"interpreter '{knots_hub.constants.INTERPRETER_PATH}' (frozen={knots_hub.constants.IS_APP_FROZEN})"
