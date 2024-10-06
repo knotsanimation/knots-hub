@@ -231,6 +231,12 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     assert InstallRezPatcher.called is True
     assert InstallPythonPatcher.called is True
 
+    # check about subcommand
+
+    argv = ["about", "--restarted", "1"]
+    with pytest.raises(SystemExit):
+        knots_hub.__main__.main(argv=argv)
+
     # check uninstall
 
     def _patch_execv(exe_: str, argv_: List[str]):

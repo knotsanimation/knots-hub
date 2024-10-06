@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sys
+import webbrowser
 from typing import Type
 
 import kloch
@@ -361,6 +362,41 @@ class UninstallParser(BaseParser):
         super().add_to_parser(parser)
 
 
+class AboutParser(BaseParser):
+    """
+    An "about" sub-command.
+    """
+
+    def execute(self):
+        print(f"{knots_hub.__name__} v{knots_hub.__version__}")
+        print(
+            f"interpreter '{knots_hub.constants.INTERPRETER_PATH}' (frozen={knots_hub.constants.IS_APP_FROZEN})"
+        )
+        configstr = json.dumps(self._config.as_dict(), indent=4, default=str)
+        print(f"config={configstr}")
+
+        if self.open_local_dir:
+            path = self._config.local_install_path
+            LOGGER.info(f"opening '{path}'")
+            webbrowser.open(str(path))
+
+    @property
+    def open_local_dir(self):
+        """
+        Open the local instllation directory for knots-hub in the system file explorer.
+        """
+        return self._args.open_local_dir
+
+    @classmethod
+    def add_to_parser(cls, parser: argparse.ArgumentParser):
+        super().add_to_parser(parser)
+        parser.add_argument(
+            "--open-local-dir",
+            action="store_true",
+            help=cls.open_local_dir.__doc__,
+        )
+
+
 def get_cli(
     config: HubConfig,
     filesystem: HubLocalFilesystem,
@@ -393,6 +429,12 @@ def get_cli(
         description="Uninstall the hub from the user system.",
     )
     UninstallParser.add_to_parser(subparser)
+
+    subparser = subparsers.add_parser(
+        "about",
+        description="Meta options about knots hub itself.",
+    )
+    AboutParser.add_to_parser(subparser)
 
     argv: list[str] = sys.argv[1:] if argv is None else argv.copy()
     # allow unknown args for the `kloch` command

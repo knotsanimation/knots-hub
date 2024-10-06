@@ -6,6 +6,7 @@ import dataclasses
 import logging
 import os
 from pathlib import Path
+from typing import Any
 from typing import Optional
 
 from knots_hub.constants import Environ
@@ -96,6 +97,9 @@ class HubConfig:
             "environ_required": False,
         },
     )
+
+    def as_dict(self) -> dict[str, Any]:
+        return dataclasses.asdict(self)
 
     @classmethod
     def from_environment(cls) -> "HubConfig":
