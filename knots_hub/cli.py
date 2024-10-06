@@ -33,19 +33,20 @@ def get_restart_args(
     """
     Get the args to pass to ``os.exec*``
     """
-    argv = ["knots_hub"]  # program name expected by os.exec*
-    argv += ["--restarted__", str(restarted_amount + 1)]
+    newargv = ["knots_hub"]  # program name expected by os.exec*
 
-    new_argv = current_argv.copy()
+    argvcp = current_argv.copy()
 
-    if "--restarted__" in new_argv:
-        index = new_argv.index("--restarted__")
+    if "--restarted__" in argvcp:
+        index = argvcp.index("--restarted__")
         # remove the arg and its value
-        new_argv.pop(index)
-        new_argv.pop(index)
+        argvcp.pop(index)
+        argvcp.pop(index)
 
-    argv += new_argv
-    return argv
+    newargv += argvcp
+    newargv += ["--restarted__", str(restarted_amount + 1)]
+
+    return newargv
 
 
 class BaseParser:
