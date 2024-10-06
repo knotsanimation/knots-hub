@@ -7,7 +7,7 @@ artist to interract with the pipeline.
 > The hub only works on Windows yet but as been planned to include Linux 
 > support in the future.
 
-# design
+## concept
 
 The hub wraps every other piece of software in use at Knots and ensure they
 are properly configured and installed.
@@ -18,6 +18,8 @@ being pretty minimal we defer of storing as much software possible on the user
 local machine to avoid reducing performances.
 
 The hub is reponsible of installing himself on the user machine, using
-pre-compiled executable provided arbitrarly. We could have used a seperate
-installer and the hub but to reduce maintenance they are both combined in 
-the same code.
+pre-compiled executable provided via a configuration. 
+
+## documentation
+
+Read the documentation: https://knotsanimation.github.io/knots-hub/

@@ -26,10 +26,11 @@ class Environ:
     with an associated path for download.
     """
 
-    VENDOR_INSTALLERS_CONFIG_PATH = f"{_ENVPREFIX}_VENDOR_INSTALLERS_CONFIG"
+    VENDOR_INSTALLER_CONFIG_PATHS = f"{_ENVPREFIX}_VENDOR_INSTALLER_CONFIG_PATHS"
     """
-    Filesystem path to an existing json file used to specify which 
-    external program to install with which version.
+    List of filesystem path to existing json files used to specify which 
+    external program to install with which version. The list of path is separated
+    by the system path separator character.
     """
 
 

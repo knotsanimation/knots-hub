@@ -1,34 +1,49 @@
-import filecmp
 import json
+import logging
 import os
+import subprocess
 import sys
-import uuid
+import tempfile
 from pathlib import Path
 from typing import List
-from typing import Type
 
 import pytest
 
 import knots_hub.__main__
-import knots_hub.installer._python
-import knots_hub.installer._rez
 
 
-def test__main__config():
+def test__main__config(tmp_path, monkeypatch):
+    root_dir = tmp_path / "knots-hub"
+    monkeypatch.setattr(knots_hub.filesystem, "_DEFAULT_ROOT_DIR", root_dir)
+
     argv = []
     with pytest.raises(OSError) as error:
         knots_hub.__main__.main(argv=argv)
         assert "environment variable" in str(error)
 
+    assert not root_dir.exists()
 
-def test__main__no_installers(monkeypatch, tmp_path):
+
+def test__main__no_installers(monkeypatch, tmp_path, caplog):
+
+    caplog.set_level(logging.DEBUG)
 
     install_dir = tmp_path / "hub"
     monkeypatch.setenv(knots_hub.Environ.USER_INSTALL_PATH, str(install_dir))
+    root_dir = tmp_path / "knots-hub"
+    root_dir.mkdir()
+    monkeypatch.setattr(knots_hub.filesystem, "_DEFAULT_ROOT_DIR", root_dir)
+
+    # we fake a local install already happened
+    hubinstall = knots_hub.installer.HubInstallRecord(2, "1", root_dir, {})
+    hubinstall_path = root_dir / ".hubinstall"
+    hubinstall.write_to_disk(hubinstall_path)
 
     argv = []
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
+
+    assert root_dir.exists()
 
 
 def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
@@ -38,7 +53,6 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     caplog.set_level("DEBUG")
 
     install_dir = tmp_path / "hub"
-    filesystem = knots_hub.HubInstallFilesystem(root=install_dir)
 
     last_hub_version = "999.1.0"
     installers_content = {
@@ -49,19 +63,20 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     with installers_path.open("w") as file:
         json.dump(installers_content, file, indent=4)
 
-    os.mkdir(tmp_path / "v999")
-    Path(tmp_path, "v999", filesystem.expected_exe_src.name).write_text(
-        "fake executable"
-    )
+    exe_name = knots_hub.constants.EXECUTABLE_NAME
 
+    os.mkdir(tmp_path / "v999")
+    Path(tmp_path, "v999", exe_name).write_text("fake executable")
+
+    # we intentionally add a useless extra nested dir
+    vendor_root = tmp_path / ".vendorroot"
     vendor_install_dir = tmp_path / "vendor"
     rez_install_dir = vendor_install_dir / "rez"
 
     vendor_config = {
         "rez": {
-            "version": 1,
             "install_dir": str(rez_install_dir),
-            "dirs_to_make": [str(vendor_install_dir)],
+            "dirs_to_make": [str(vendor_root), str(vendor_install_dir)],
             "python_version": "3.10.11",
             "rez_version": "2.114.1",
         }
@@ -75,6 +90,12 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         exe: Path = None
         args: List[str] = None
         called = False
+
+        @classmethod
+        def clear(cls):
+            cls.exe = None
+            cls.args = None
+            cls.called = False
 
         @classmethod
         def _patch_os_execv(cls, exe, args):
@@ -92,86 +113,39 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     monkeypatch.setenv(knots_hub.Environ.USER_INSTALL_PATH, str(install_dir))
     monkeypatch.setenv(knots_hub.Environ.INSTALLER_LIST_PATH, str(installers_path))
     monkeypatch.setenv(
-        knots_hub.Environ.VENDOR_INSTALLERS_CONFIG_PATH, str(vendor_config_path)
+        knots_hub.Environ.VENDOR_INSTALLER_CONFIG_PATHS, str(vendor_config_path)
     )
+
+    data_root_dir = tmp_path / "knots-hub.data"
+    monkeypatch.setattr(knots_hub.filesystem, "_DEFAULT_ROOT_DIR", data_root_dir)
+
+    filesystem = knots_hub.HubLocalFilesystem()
+    assert filesystem.root_dir == data_root_dir
 
     def _check_shortcut():
         _src_shortcut_path = knots_hub.installer.create_exe_shortcut(
-            filesystem.root, ExecvPatcher.exe, dry_run=True
+            filesystem.shortcut_dir, ExecvPatcher.exe, dry_run=True
         )
         assert _src_shortcut_path.exists()
         if knots_hub.OS.is_windows():
             # XXX: windows lnk store the link in ascii
-            assert bytes(filesystem.last_executable) in _src_shortcut_path.read_bytes()
+            local_exe = knots_hub.installer.get_hub_local_executable(filesystem)
+            assert local_exe
+            assert bytes(local_exe) in _src_shortcut_path.read_bytes()
 
     # check the install system
+
     argv = ["--log-environ"]
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.current_exe_src
-    assert ExecvPatcher.exe.parent.exists()
-    assert filesystem.install_src_dir.exists()
-    assert not filesystem.install_new_dir.exists()
-    assert not filesystem.install_old_dir.exists()
-    assert "--restarted__" in ExecvPatcher.args
-    assert "UNWANTEDARG" not in ExecvPatcher.args
-
-    # check the update system
-    ExecvPatcher.called = False
-    argv = ExecvPatcher.args.copy()[1:]
-    with pytest.raises(SystemExit):
-        knots_hub.__main__.main(argv=argv)
-
-    assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.current_exe_new
-    assert ExecvPatcher.exe.parent.exists()
-    assert filesystem.install_src_dir.exists()
-    assert filesystem.install_new_dir.exists()
-    assert not filesystem.install_old_dir.exists()
-    assert "--restarted__" in ExecvPatcher.args
-    assert "__applyupdate 1" in " ".join(ExecvPatcher.args)
-    assert "UNWANTEDARG" not in ExecvPatcher.args
-
-    # check the apply update stage 1 system
-    ExecvPatcher.called = False
-    argv = ExecvPatcher.args.copy()[1:]
-    with pytest.raises(SystemExit):
-        knots_hub.__main__.main(argv=argv)
-
-    assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.current_exe_old
-    assert ExecvPatcher.exe.parent.exists()
-    assert not filesystem.install_src_dir.exists()
-    assert filesystem.install_new_dir.exists()
-    assert filesystem.install_old_dir.exists()
-    assert "--restarted__" in ExecvPatcher.args
-    assert "__applyupdate 2" in " ".join(ExecvPatcher.args)
-    assert "UNWANTEDARG" not in ExecvPatcher.args
-
-    # check the apply update stage 2 system
-    ExecvPatcher.called = False
-    argv = ExecvPatcher.args.copy()[1:]
-    with pytest.raises(SystemExit):
-        knots_hub.__main__.main(argv=argv)
-
-    assert ExecvPatcher.called
-    assert ExecvPatcher.exe == filesystem.current_exe_src
-    assert ExecvPatcher.exe.parent.exists()
-    assert filesystem.install_src_dir.exists()
-    assert not filesystem.install_new_dir.exists()
-    assert filesystem.install_old_dir.exists()
-    assert "--restarted__" in ExecvPatcher.args
-    assert "__applyupdate" not in ExecvPatcher.args
+    expected_local_exe = install_dir / exe_name
+    assert expected_local_exe.exists()
     _check_shortcut()
+    assert ExecvPatcher.called is True
+    assert ExecvPatcher.exe == expected_local_exe
 
-    # the hub is supposed to restarted with the latest version so we fake it by manually
-    # overriding it.
-    monkeypatch.setattr(knots_hub, "__version__", last_hub_version)
-
-    # check post-update
-    # it must first trigger the vendors install
+    # check the vendor install system
 
     class InstallRezPatcher:
 
@@ -182,13 +156,12 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
             cls.called = True
 
     monkeypatch.setattr(
-        knots_hub.installer._rez,
+        knots_hub.installer.vendors._rez,
         "install_rez",
         InstallRezPatcher.patch,
     )
 
     class InstallPythonPatcher:
-
         called = False
 
         @classmethod
@@ -196,36 +169,44 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
             cls.called = True
 
     monkeypatch.setattr(
-        knots_hub.installer._rez,
+        knots_hub.installer.vendors._rez,
         "install_python",
         InstallPythonPatcher.patch,
     )
 
-    ExecvPatcher.called = False
+    def _patched_is_runtime_from_local_install(*args):
+        knots_hub.filesystem.LOGGER.info("// patched")
+        return True
+
+    monkeypatch.setattr(
+        knots_hub.cli,
+        "is_runtime_from_local_install",
+        _patched_is_runtime_from_local_install,
+    )
+
     argv = ExecvPatcher.args.copy()[1:]
+    ExecvPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert not ExecvPatcher.called
-    assert filesystem.install_src_dir.exists()
-    assert not filesystem.install_new_dir.exists()
-    assert not filesystem.install_old_dir.exists()
+    assert ExecvPatcher.called is False
     assert InstallRezPatcher.called is True
     assert InstallPythonPatcher.called is True
     assert vendor_install_dir.exists()
     assert rez_install_dir.exists()
 
-    # check launching after everything is installed
+    # check no install
 
-    ExecvPatcher.called = False
-    InstallPythonPatcher.called = False
+    ExecvPatcher.clear()
     InstallRezPatcher.called = False
+    InstallPythonPatcher.called = False
 
-    argv = []
+    argv = ["--restarted", "1"]
+    ExecvPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert ExecvPatcher.called is False, ExecvPatcher.args
+    assert ExecvPatcher.called is False
     assert InstallRezPatcher.called is False
     assert InstallPythonPatcher.called is False
 
@@ -245,38 +226,39 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     with vendor_config_path.open("w") as file:
         json.dump(vendor_config, file, indent=4)
 
-    argv = []
+    ExecvPatcher.clear()
+    InstallRezPatcher.called = False
+    InstallPythonPatcher.called = False
+
+    argv = ["--restarted", "1"]
+    ExecvPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert ExecvPatcher.called is False, ExecvPatcher.args
+    assert ExecvPatcher.called is False
     assert InstallRezPatcher.called is True
     assert InstallPythonPatcher.called is True
 
-    # check --force-local-restart is working
+    # check uninstall
 
-    ExecvPatcher.called = False
-    InstallPythonPatcher.called = False
-    InstallRezPatcher.called = False
+    def _patch_execv(exe_: str, argv_: List[str]):
+        subprocess.run([exe_] + argv_[1:], check=True)
 
-    argv = ["--force-local-restart"]
-    with pytest.raises(SystemExit):
-        knots_hub.__main__.main(argv=argv)
+    monkeypatch.setattr(os, "execv", _patch_execv)
 
-    assert ExecvPatcher.called is True, ExecvPatcher.args
-    assert ExecvPatcher.exe == filesystem.current_exe_src
-    assert "--force-local-restart" not in ExecvPatcher.args
-    assert InstallRezPatcher.called is False
-    assert InstallPythonPatcher.called is False
+    tmppatched = tmp_path / "tmp.uninstall"
+    tmppatched.mkdir()
 
-    # test uninstall
+    def _patch_tempfile(*args, **kwargs):
+        return str(tmppatched)
 
-    assert vendor_install_dir.exists()
-    assert rez_install_dir.exists()
+    monkeypatch.setattr(tempfile, "mkdtemp", _patch_tempfile)
 
     argv = ["uninstall"]
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert not vendor_install_dir.exists()
     assert not rez_install_dir.exists()
+    assert not vendor_install_dir.exists()
+    assert not data_root_dir.exists()
+    assert list(tmppatched.glob("*"))

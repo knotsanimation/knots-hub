@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 import shutil
 import subprocess
@@ -9,6 +10,7 @@ from pythonning.web import download_file
 from pythonning.filesystem import extract_zip
 
 from knots_hub import OS
+from knots_hub import serializelib
 from ._base import BaseVendorInstaller
 from ._python import install_python
 
@@ -62,59 +64,45 @@ def install_rez(
         return target_dir / "bin" / "rez" / "rez"
 
 
+@dataclasses.dataclass
 class RezVendorInstaller(BaseVendorInstaller):
-
-    def __init__(
-        self,
-        python_version: str,
-        rez_version: str,
-        version: int,
-        install_dir: Path,
-        dirs_to_make: list[Path] = None,
-    ):
-        self._python_version = python_version
-        self._rez_version = rez_version
-        super().__init__(
-            version=version,
-            install_dir=install_dir,
-            dirs_to_make=dirs_to_make,
-        )
+    python_version: str = serializelib.StrField(
+        doc="a full valid python version to install rez with"
+    )
+    rez_version: str = serializelib.StrField(
+        doc="a full valid rez version to install from the official GitHub repo."
+    )
 
     @classmethod
     def name(cls) -> str:
         return "rez"
 
-    def install(self):
+    @classmethod
+    def version(cls) -> int:
+        return 2
 
-        if self.is_installed:
-            return
+    def install(self):
 
         self.make_install_directories()
 
-        python_dir = self._install_dir / "python"
+        python_dir = self.install_dir / "python"
         python_dir.mkdir()
 
         # rez has its dedicated python interpreter for proper isolation
-        LOGGER.info(f"installing python-{self._python_version}")
+        LOGGER.info(f"installing python-{self.python_version}")
         with timeit("python installation took ", LOGGER.info):
             python_exe = install_python(
-                python_version=self._python_version,
+                python_version=self.python_version,
                 target_dir=python_dir,
             )
 
-        rez_dir = self._install_dir / "rez"
+        rez_dir = self.install_dir / "rez"
         rez_dir.mkdir()
 
-        LOGGER.info(f"installing rez-{self._version}")
+        LOGGER.info(f"installing rez-{self.version}")
         with timeit("rez installation took ", LOGGER.info):
             rez_exe = install_rez(
-                rez_version=self._rez_version,
+                rez_version=self.rez_version,
                 target_dir=rez_dir,
                 python_executable=python_exe,
             )
-
-        self.set_install_completed()
-
-    def uninstall(self):
-        LOGGER.info(f"removing '{self._install_dir}'")
-        shutil.rmtree(self._install_dir)

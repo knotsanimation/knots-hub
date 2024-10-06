@@ -63,6 +63,9 @@ class ColoredFormatter(logging.Formatter):
         return message
 
 
+_DISK_HANDLER_ATTR = "knots_disk_handler"
+
+
 def configure_logging(
     log_level: Union[int, str],
     log_path: Path,
@@ -94,6 +97,16 @@ def configure_logging(
         backupCount=1,
         encoding="utf-8",
     )
+    setattr(handler, _DISK_HANDLER_ATTR, True)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(disk_formatter)
     logging.root.addHandler(handler)
+
+
+def shutdown_disk_logging():
+    """
+    Disable logging to disk if it has been enabled by knots-hub previously.
+    """
+    for handler in logging.root.handlers:
+        if hasattr(handler, _DISK_HANDLER_ATTR):
+            logging.root.removeHandler(handler)

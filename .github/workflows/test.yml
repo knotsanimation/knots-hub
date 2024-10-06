@@ -1,0 +1,41 @@
+name: test
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'TODO.md'
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Run unittests Python ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.9"
+          - "3.11"
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Poetry
+        run: pipx install git+https://github.com/python-poetry/poetry.git@5bab98c9500f1050c6bb6adfb55580a23173f18d
+      - name: Install Python ${{ matrix.python-version }}
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          update-environment: false
+      - run: poetry env use ${{ steps.setup-python.outputs.python-path }}
+      - run: poetry install --extras "test" --no-interaction --no-cache -vvv
+      - run: poetry run pytest ./tests

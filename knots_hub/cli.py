@@ -4,27 +4,33 @@ import json
 import logging
 import os
 import sys
-from typing import List
 from typing import Type
 
 import kloch
 from pythonning.benchmark import timeit
 
 import knots_hub
-from knots_hub import HubInstallFilesystem
-from knots_hub import HubConfig
 import knots_hub.installer
+from knots_hub import HubConfig
+from knots_hub import HubLocalFilesystem
+from knots_hub.filesystem import is_runtime_from_local_install
+from knots_hub.installer import HubInstallRecord
 from knots_hub.installer import HubInstallersList
-from knots_hub.filesystem import rmtree
+from knots_hub.installer import VendorInstallRecord
+from knots_hub.installer import get_hub_local_executable
+from knots_hub.installer import read_vendor_installer_from_file
+from knots_hub.installer import uninstall_vendor
+from knots_hub.uninstaller import get_paths_to_uninstall
+from knots_hub.uninstaller import uninstall_hub_only
+from knots_hub.uninstaller import uninstall_paths
 
 LOGGER = logging.getLogger(__name__)
 
 
 def get_restart_args(
-    current_argv: List[str],
+    current_argv: list[str],
     restarted_amount: int = 0,
-    apply_update: int = 0,
-) -> List[str]:
+) -> list[str]:
     """
     Get the args to pass to ``os.exec*``
     """
@@ -32,20 +38,6 @@ def get_restart_args(
     argv += ["--restarted__", str(restarted_amount + 1)]
 
     new_argv = current_argv.copy()
-
-    if "__applyupdate" in new_argv:
-        applyupdate_index = new_argv.index("__applyupdate")
-        if apply_update:
-            # imply usually the restart called at applyupdate stage 1
-            new_argv.pop(applyupdate_index + 1)
-            new_argv.insert(applyupdate_index + 1, str(apply_update))
-        else:
-            # imply usually the restart called at applyupdate stage 2
-            new_argv.pop(applyupdate_index)
-            new_argv.pop(applyupdate_index)
-
-    elif apply_update:
-        new_argv = ["__applyupdate", str(apply_update)] + new_argv
 
     if "--restarted__" in new_argv:
         index = new_argv.index("--restarted__")
@@ -74,10 +66,10 @@ class BaseParser:
     def __init__(
         self,
         args: argparse.Namespace,
-        original_argv: List[str],
+        original_argv: list[str],
         config: HubConfig,
-        filesystem: HubInstallFilesystem,
-        extra_args: List[str],
+        filesystem: HubLocalFilesystem,
+        extra_args: list[str],
     ):
         self._args: argparse.Namespace = args
         self._original_argv = original_argv
@@ -100,13 +92,6 @@ class BaseParser:
         return self._args.log_environ
 
     @property
-    def force_local_restart(self) -> bool:
-        """
-        Force a restart with the locally installed executable, if any.
-        """
-        return self._args.force_local_restart
-
-    @property
     def no_coloring(self) -> bool:
         """
         Disable colored logging, in case your system doesn't support it.
@@ -127,83 +112,128 @@ class BaseParser:
         """
         Arbitrary code that must be executed when the user ask this command.
         """
-        if self.force_local_restart and self._filesystem.is_installed:
-            exe_path = self._filesystem.last_executable
-            if not exe_path:
-                raise RuntimeError(
-                    f"Can't find the last executable for filesystem root '{self._filesystem.root}'"
-                )
-            return sys.exit(self._restart_hub(exe=str(exe_path)))
-
         if self.log_environ:
             LOGGER.debug(
                 "environ=" + json.dumps(dict(os.environ), indent=4, sort_keys=True)
             )
 
-        if self._filesystem.is_installed:
-            shortcut = knots_hub.installer.create_exe_shortcut(
-                shortcut_dir=self._filesystem.root,
-                exe_path=self._filesystem.last_executable,
+        local_install_path = self._config.local_install_path
+        is_runtime_local = is_runtime_from_local_install(local_install_path)
+
+        if not is_runtime_local:
+
+            # an empty installer list imply the hub is never installed/updated locally
+            installer_list = None
+            installer_list_path = self._config.installer_list_path
+            if installer_list_path:
+                installer_list = HubInstallersList.from_file(path=installer_list_path)
+
+            need_install = False
+
+            if installer_list and not self._filesystem.is_hub_installed:
+                need_install = True
+            elif (
+                installer_list
+                and self._filesystem.is_hub_installed
+                and not is_runtime_local
+            ):
+                hubrecord_path = self._filesystem.hubinstall_record_path
+                hubrecord_file = HubInstallRecord.read_from_disk(hubrecord_path)
+                if installer_list.last_version != hubrecord_file.installed_version:
+                    need_install = True
+                    LOGGER.debug("uninstalling existing hub for upcoming update")
+                    uninstall_hub_only(hubrecord_file)
+
+            if need_install:
+                src_path = installer_list.last_path
+                dst_path = local_install_path
+                LOGGER.info(f"installing hub '{src_path}' to '{dst_path}'")
+                with timeit("installing took ", LOGGER.info):
+                    exe_path = knots_hub.installer.install_hub(
+                        install_src_path=src_path,
+                        install_dst_path=dst_path,
+                        installed_version=installer_list.last_version,
+                        hubrecord_path=self._filesystem.hubinstall_record_path,
+                    )
+                shortcut = knots_hub.installer.create_exe_shortcut(
+                    shortcut_dir=self._filesystem.shortcut_dir,
+                    exe_path=exe_path,
+                )
+                LOGGER.debug(f"updated shortcut '{shortcut}'")
+                # we restart to local hub we just installed
+                return sys.exit(self._restart_hub(exe=str(exe_path)))
+
+            exe_path = get_hub_local_executable(self._filesystem)
+            if exe_path:
+                return sys.exit(self._restart_hub(exe=str(exe_path)))
+
+        elif is_runtime_local and not self._restarted:
+            raise RuntimeError(
+                "Current application seems to be started directly from the local install."
+                "You need to launch it from the server first."
             )
-            LOGGER.debug(f"updated shortcut '{shortcut}'")
 
-        # an empty installer list imply the hub is never installed/updated locally
-        installer_list = None
-        installer_list_path = self._config.installer_list_path
-        if installer_list_path:
-            installer_list = HubInstallersList.from_file(path=installer_list_path)
-
-        # check installed
-        if installer_list and not self._filesystem.is_installed:
-            src_path = installer_list.last_path
-            LOGGER.info(f"installing hub '{src_path}'")
-            with timeit("installing took ", LOGGER.info):
-                exe_path = knots_hub.installer.install_hub(
-                    install_src_path=src_path,
-                    filesystem=self._filesystem,
-                )
-            return sys.exit(self._restart_hub(exe=str(exe_path)))
-
-        # finalize update that took place previously
-        if self._filesystem.install_old_dir.exists():
-            old_dir = self._filesystem.install_old_dir
-            LOGGER.debug(f"shutil.rmtree('{old_dir}')")
-            rmtree(old_dir)
-
-        # check up-to-date (only if there was no "old-dir" which implied an update all-ready just occurred.)
-        elif not knots_hub.installer.is_hub_up_to_date(installer_list):
-            src_path = installer_list.last_path
-            LOGGER.info(f"updating hub to '{src_path}'")
-            with timeit("updating took ", LOGGER.info):
-                exe_path = knots_hub.installer.update_hub(
-                    update_src_path=src_path,
-                    filesystem=self._filesystem,
-                )
-            return sys.exit(self._restart_hub(exe=str(exe_path), apply_update=1))
+        # > reaching here mean the runtime is local
 
         # install or update vendor programs
-        vendor_path = self._config.vendor_installers_config_path
-        if vendor_path and not vendor_path.exists():
-            LOGGER.error(f"Found non-existing vendor installer config '{vendor_path}'")
-        elif vendor_path:
-            LOGGER.info(f"reading vendor installers '{vendor_path}'")
-            vendor_installers = knots_hub.installer.read_vendor_installers_from_file(
-                file_path=vendor_path,
+
+        vendors2install = {}
+        vendor_config_paths = self._config.vendor_installer_config_paths
+        for vendor_path in vendor_config_paths:
+            if not vendor_path.exists():
+                LOGGER.error(f"Non-existing vendor installer '{vendor_path}'")
+                continue
+            vendors = read_vendor_installer_from_file(vendor_path)
+            vendors2install.update({vendor.name(): vendor for vendor in vendors})
+
+        # we are sure the path exists as vendor happens after hub install/update
+        hubrecord_path = self._filesystem.hubinstall_record_path
+        hubrecord_file = HubInstallRecord.read_from_disk(hubrecord_path)
+        vendor_installed_paths = hubrecord_file.vendors_record_paths
+        if vendor_installed_paths:
+            # vendor that were installed previously but that we don't install anymore
+            vendors2uninstall = set(vendor_installed_paths.keys()).difference(
+                vendors2install.keys()
             )
-            LOGGER.info(f"found {len(vendor_installers)} vendor installers.")
+        else:
+            vendor_installed_paths = {}
+            vendors2uninstall = set()
 
-            for vendor_installer in vendor_installers:
-                if vendor_installer.version_installed == vendor_installer.version:
-                    LOGGER.debug(f"{vendor_installer} is up-to-date")
-                    continue
+        for vendor2uninstall in vendors2uninstall:
+            vendor_record_path = vendor_installed_paths[vendor2uninstall]
+            if vendor_record_path.exists():
+                vendor_record = VendorInstallRecord.read_from_disk(vendor_record_path)
+                LOGGER.info(f"uninstalling vendor '{vendor_record.name}'")
+                uninstall_vendor(vendor_record)
+            else:
+                # somehow the record path was already deleted externally
+                continue
 
-                if vendor_installer.is_installed:
-                    # we uninstall so we can install the latest version
-                    LOGGER.info(f"uninstalling {vendor_installer}")
-                    vendor_installer.uninstall()
+        if vendors2install:
+            LOGGER.debug(f"found {len(vendors2install)} vendor installers.")
 
-                LOGGER.info(f"installing {vendor_installer}")
-                vendor_installer.install()
+            vendors_record_paths = {}
+
+            for vendor_name, vendor in vendors2install.items():
+
+                vendor_record_path = vendor_installed_paths.get(vendor_name)
+                if not vendor_record_path:
+                    vendor_record_path = vendor.install_record_path
+
+                installed = knots_hub.installer.install_vendor(
+                    vendor=vendor,
+                    record_path=vendor_record_path,
+                )
+                if installed:
+                    LOGGER.info(f"installed vendor '{vendor_name}'")
+                vendors_record_paths[vendor_name] = vendor_record_path
+
+            LOGGER.info(
+                f"updating hub records '{hubrecord_path}' with installed vendors"
+            )
+            HubInstallRecord(vendors_record_paths=vendors_record_paths).update_disk(
+                hubrecord_path
+            )
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
@@ -226,11 +256,6 @@ class BaseParser:
             help=cls.log_environ.__doc__,
         )
         parser.add_argument(
-            "--force-local-restart",
-            action="store_true",
-            help=cls.force_local_restart.__doc__,
-        )
-        parser.add_argument(
             "--restarted__",
             dest="_restarted",
             default=0,
@@ -239,13 +264,12 @@ class BaseParser:
         )
         parser.set_defaults(func=cls)
 
-    def _restart_hub(self, exe: str, apply_update: int = 0):
+    def _restart_hub(self, exe: str):
         """
         ! Anything after this function is not called.
 
         Args:
             exe: filesystem path to an existing hub executable
-            apply_update: which stage of update to apply on restart
         """
         # safety to prevent an unlimited loop of restart.
         # not that it might happen but we never know
@@ -259,7 +283,6 @@ class BaseParser:
         argv = get_restart_args(
             current_argv=current_argv,
             restarted_amount=self._restarted,
-            apply_update=apply_update,
         )
 
         LOGGER.info(f"restarting hub '{exe}' ...")
@@ -321,87 +344,20 @@ class KlochParser(BaseParser):
         super().add_to_parser(parser)
 
 
-class ApplyUpdateParser(BaseParser):
-    """
-    An "applyupdate" sub-command which is only intended to be used internally.
-
-    XXX: logic/api modification need to be propagated in `get_restart_args`
-    """
-
-    @property
-    def stage(self) -> int:
-        """
-        The stage at which the update must be applied (updates are 2 stages process).
-        """
-        return self._args.stage
-
-    def execute(self):
-        if self.stage == 1:
-            LOGGER.info("applying update stage 1")
-            old_path = self._filesystem.install_src_dir
-            new_path = self._filesystem.install_old_dir
-            LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
-            old_path.rename(new_path)
-
-            exe = str(self._filesystem.current_exe_old)
-            sys.exit(self._restart_hub(exe=exe, apply_update=2))
-
-        if self.stage == 2:
-            LOGGER.info("applying update stage 2")
-            old_path = self._filesystem.install_new_dir
-            new_path = self._filesystem.install_src_dir
-            LOGGER.debug(f"renaming '{old_path}' to '{new_path}'")
-            old_path.rename(new_path)
-
-            exe = str(self._filesystem.current_exe_src)
-            sys.exit(self._restart_hub(exe=exe))
-
-    @classmethod
-    def add_to_parser(cls, parser: argparse.ArgumentParser):
-        super().add_to_parser(parser)
-        parser.add_argument(
-            "stage",
-            type=int,
-            help=cls.stage.__doc__,
-        )
-
-
 class UninstallParser(BaseParser):
     """
     An "uninstall" sub-command.
     """
 
     def execute(self):
-
-        uninstalled = False
-
-        vendor_path = self._config.vendor_installers_config_path
-        vendor_installers = []
-        if vendor_path and not vendor_path.exists():
-            LOGGER.error(f"Found non-existing vendor installer config '{vendor_path}'")
-        elif vendor_path:
-            LOGGER.info(f"reading vendor installers '{vendor_path}'")
-            vendor_installers = knots_hub.installer.read_vendor_installers_from_file(
-                file_path=vendor_path,
-            )
-
-        for vendor_installer in vendor_installers:
-            for dir_path in [
-                vendor_installer.install_dir
-            ] + vendor_installer.dirs_to_make:
-                if dir_path.exists():
-                    LOGGER.info(f"removing vendor '{dir_path}'")
-                    rmtree(dir_path)
-                    uninstalled = True
-
-        if self._filesystem.is_installed:
-            LOGGER.info(f"about to uninstall hub at '{self._filesystem.root}'")
-            # this function exit the session
-            knots_hub.installer.uninstall_hub(filesystem=self._filesystem)
-            uninstalled = True
-
-        if not uninstalled:
+        paths = get_paths_to_uninstall(filesystem=self._filesystem)
+        if not paths:
             LOGGER.info("nothing to uninstall; exiting")
+            return
+
+        LOGGER.info(f"uninstalling hub from the filesystem.")
+        LOGGER.debug(f"removing {paths}")
+        sys.exit(uninstall_paths(paths=paths))
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
@@ -410,16 +366,16 @@ class UninstallParser(BaseParser):
 
 def get_cli(
     config: HubConfig,
-    filesystem: HubInstallFilesystem,
-    argv: List[str] = None,
+    filesystem: HubLocalFilesystem,
+    argv: list[str] = None,
 ) -> BaseParser:
     """
     Return the command line interface generated from user arguments provided.
 
     Args:
         argv: source command line argument to use instea dof the usual sys.argv
-        config:
-        filesystem:
+        config: user-defined runtime configuration of the hub
+        filesystem: collection of paths for storing runtime data
     """
     parser = argparse.ArgumentParser(
         knots_hub.__name__,
@@ -436,19 +392,13 @@ def get_cli(
     KlochParser.add_to_parser(subparser)
 
     subparser = subparsers.add_parser(
-        "__applyupdate",
-        add_help=False,
-    )
-    ApplyUpdateParser.add_to_parser(subparser)
-
-    subparser = subparsers.add_parser(
         "uninstall",
         description="Uninstall the hub from the user system.",
     )
     UninstallParser.add_to_parser(subparser)
 
-    argv: List[str] = sys.argv[1:] if argv is None else argv.copy()
-    # allow unknown args for when we restart with `applyupdate`
+    argv: list[str] = sys.argv[1:] if argv is None else argv.copy()
+    # allow unknown args for the `kloch` command
     args, extra_args = parser.parse_known_args(argv)
     cli_class: Type[BaseParser] = args.func
     instance: BaseParser = cli_class(

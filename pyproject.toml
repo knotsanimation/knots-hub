@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "knots-hub"
-version = "0.6.0"  # XXX: keep in sync with __init__.py
+version = "0.7.0"  # XXX: keep in sync with __init__.py
 description = "Entry point tool to access Knots pipeline."
 authors = ["Liam Collod <lcollod@gmail.com>"]
 readme = "./README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8.1"
+python = ">=3.9.0"
 pythonning = { git = "https://github.com/knotsanimation/pythonning.git" }
 kloch = { git = "https://github.com/knotsanimation/kloch.git" }
 kloch_rezenv = { branch = "main", git = "https://github.com/knotsanimation/kloch-launcher-rezenv.git" }
