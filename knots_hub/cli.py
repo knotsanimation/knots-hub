@@ -156,7 +156,11 @@ class BaseParser:
             if exe_path:
                 return sys.exit(self._restart_hub(exe=str(exe_path)))
 
-        elif is_runtime_local and not self._restarted:
+        elif (
+            is_runtime_local
+            and not self._restarted
+            and not self._config.skip_local_check
+        ):
             LOGGER.error(
                 "Current application seems to be started directly from the local install."
                 "You need to launch it from the server first."

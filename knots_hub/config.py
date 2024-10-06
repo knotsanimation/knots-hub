@@ -83,6 +83,20 @@ class HubConfig:
         },
     )
 
+    skip_local_check: bool = dataclasses.field(
+        default=False,
+        metadata={
+            "documentation": (
+                "Disable the check verifying if the app is directly launched from "
+                "the server or locally."
+                "Any non-empty value in the environment variable will disable it."
+            ),
+            "environ": Environ.DISABLE_LOCAL_CHECK,
+            "environ_cast": bool,
+            "environ_required": False,
+        },
+    )
+
     @classmethod
     def from_environment(cls) -> "HubConfig":
         """

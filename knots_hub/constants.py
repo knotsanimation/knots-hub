@@ -33,6 +33,12 @@ class Environ:
     by the system path separator character.
     """
 
+    DISABLE_LOCAL_CHECK = f"{_ENVPREFIX}_DISABLE_LOCAL_CHECK"
+    """
+    Disable the check verifying if the app is directly launched from 
+    the server or locally.
+    """
+
 
 class OS:
     """
