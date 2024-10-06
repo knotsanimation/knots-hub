@@ -44,12 +44,21 @@ def main(argv: Optional[list[str]] = None, logging_configuration: bool = False):
 
     # probably a nuitka compiling bug ?
     if not exe.exists():
-        raise RuntimeError(f"The current system executable '{exe}' doesn't exist")
+        LOGGER.error(f"The current system executable '{exe}' doesn't exist")
+        sys.exit(-1)
 
     if not OS.is_windows():
-        OS.raise_unsupported()
+        LOGGER.error(f"OSError: Unsupported operating system '{OS}'")
+        sys.exit(-1)
 
-    sys.exit(cli.execute())
+    # noinspection PyBroadException
+    try:
+        exitcode = cli.execute()
+    except Exception:
+        LOGGER.exception(f"Unexpected exception while executing '{sys.argv}'")
+        exitcode = -1
+
+    sys.exit(exitcode)
 
 
 if __name__ == "__main__":
