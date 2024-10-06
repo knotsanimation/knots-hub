@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "knots-hub"
-version = "0.8.1"  # XXX: keep in sync with __init__.py
+version = "0.8.2"  # XXX: keep in sync with __init__.py
 description = "Entry point tool to access Knots pipeline."
 authors = ["Liam Collod <lcollod@gmail.com>"]
 readme = "./README.md"
