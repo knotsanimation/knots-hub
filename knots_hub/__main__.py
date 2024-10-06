@@ -7,6 +7,7 @@ from typing import Optional
 import knots_hub
 from knots_hub.constants import OS
 from knots_hub.constants import IS_APP_FROZEN
+from knots_hub.constants import INTERPRETER_PATH
 from knots_hub._logging import configure_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ def main(argv: Optional[list[str]] = None, logging_configuration: bool = False):
             disable_coloring=cli.no_coloring,
         )
 
-    exe = Path(sys.executable)
+    exe: Path = INTERPRETER_PATH
 
     LOGGER.debug(
         f"starting {knots_hub.__name__} v{knots_hub.__version__} "

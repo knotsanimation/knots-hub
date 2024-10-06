@@ -4,7 +4,6 @@ manipulate the filesystem
 
 import logging
 import os
-import sys
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -12,6 +11,7 @@ from typing import Optional
 from knots_hub import OS
 from knots_hub.constants import EXECUTABLE_NAME
 from knots_hub.constants import EXECUTABLE_NAME_REGEX
+from knots_hub.constants import INTERPRETER_PATH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def is_runtime_from_local_install(local_install_path) -> bool:
         local_install_path: path of the theoric local hub installation
     """
     try:
-        Path(sys.executable).relative_to(local_install_path)
+        Path(INTERPRETER_PATH).relative_to(local_install_path)
     except ValueError:
         return False
     return True

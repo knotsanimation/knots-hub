@@ -4,6 +4,7 @@ Variables that are constants through the app runtime.
 
 import re
 import sys
+from pathlib import Path
 
 import knots_hub
 
@@ -87,4 +88,12 @@ _IS_PACKAGED_NUITKA = hasattr(knots_hub, "__compiled__")
 IS_APP_FROZEN = _IS_PACKAGED_NUITKA
 """
 Find if the current runtime is a packaged executable.
+"""
+
+
+# XXX: the if condition is because the nuitka compiled app seems to return
+#  'python.exe' in 'sys.executable' which doesn't exist on disk.
+INTERPRETER_PATH: Path = Path(sys.argv[0]) if IS_APP_FROZEN else Path(sys.executable)
+"""
+Filesystem path to the python interpeter or executable running the current code.
 """
