@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 import sys
+from pathlib import Path
 from typing import Optional
 
 import knots_hub
@@ -32,12 +33,18 @@ def main(argv: Optional[list[str]] = None, logging_configuration: bool = False):
             disable_coloring=cli.no_coloring,
         )
 
+    exe = Path(sys.executable)
+
     LOGGER.debug(
         f"starting {knots_hub.__name__} v{knots_hub.__version__} "
-        f"(frozen={IS_APP_FROZEN})(exe={sys.executable})"
+        f"(frozen={IS_APP_FROZEN})(exe={exe})"
     )
     LOGGER.debug(f"retrieved cli with args={cli._args}")
     LOGGER.debug(f"config={config}")
+
+    # probably a nuitka compiling bug ?
+    if not exe.exists():
+        raise RuntimeError(f"The current system executable '{exe}' doesn't exist")
 
     if not OS.is_windows():
         OS.raise_unsupported()
