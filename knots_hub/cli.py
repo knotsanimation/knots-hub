@@ -157,10 +157,11 @@ class BaseParser:
                 return sys.exit(self._restart_hub(exe=str(exe_path)))
 
         elif is_runtime_local and not self._restarted:
-            raise RuntimeError(
+            LOGGER.error(
                 "Current application seems to be started directly from the local install."
                 "You need to launch it from the server first."
             )
+            sys.exit(-1)
 
         # > reaching here mean the runtime is local
 
@@ -263,10 +264,11 @@ class BaseParser:
         # safety to prevent an unlimited loop of restart.
         # not that it might happen but we never know
         if self._restarted > 3:
-            raise RuntimeError(
+            LOGGER.error(
                 "Prevented a fourth restart leading to a probable infinite recursion."
                 "Investigate the logs to find the cause."
             )
+            sys.exit(-1)
 
         current_argv = self._original_argv.copy()
         argv = get_restart_args(
@@ -289,9 +291,10 @@ class _Parser(BaseParser):
     def execute(self):
 
         if self._extra_args:
-            raise ValueError(
+            LOGGER.error(
                 f"Extra arguments not supported for the command {self._original_argv}"
             )
+            sys.exit(-1)
 
         super().execute()
         print("no command provided; exiting hub")
