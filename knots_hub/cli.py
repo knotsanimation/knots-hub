@@ -301,7 +301,7 @@ class _Parser(BaseParser):
             sys.exit(-1)
 
         super().execute()
-        print("no command provided; exiting hub")
+        LOGGER.warning("no command provided; exiting hub")
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
