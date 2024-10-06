@@ -44,10 +44,6 @@ def get_restart_args(
         new_argv.pop(index)
         new_argv.pop(index)
 
-    # prevent an infinite recursion
-    if "--force-local-restart" in new_argv:
-        new_argv.remove("--force-local-restart")
-
     argv += new_argv
     return argv
 
