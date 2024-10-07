@@ -376,25 +376,42 @@ class AboutParser(BaseParser):
         configstr = json.dumps(self._config.as_dict(), indent=4, default=str)
         print(f"config={configstr}")
 
-        if self.open_local_dir:
+        if self.open_install_dir:
             path = self._config.local_install_path
             LOGGER.info(f"opening '{path}'")
             webbrowser.open(str(path))
 
+        if self.open_data_dir:
+            path = self._filesystem.root_dir
+            LOGGER.info(f"opening '{path}'")
+            webbrowser.open(str(path))
+
     @property
-    def open_local_dir(self):
+    def open_install_dir(self):
         """
-        Open the local instllation directory for knots-hub in the system file explorer.
+        Open the local installation directory for knots-hub in the system file explorer.
         """
-        return self._args.open_local_dir
+        return self._args.open_install_dir
+
+    @property
+    def open_data_dir(self):
+        """
+        Open the local "data" directory for knots-hub in the system file explorer.
+        """
+        return self._args.open_data_dir
 
     @classmethod
     def add_to_parser(cls, parser: argparse.ArgumentParser):
         super().add_to_parser(parser)
         parser.add_argument(
-            "--open-local-dir",
+            "--open-install-dir",
             action="store_true",
-            help=cls.open_local_dir.__doc__,
+            help=cls.open_install_dir.__doc__,
+        )
+        parser.add_argument(
+            "--open-data-dir",
+            action="store_true",
+            help=cls.open_install_dir.__doc__,
         )
 
 
