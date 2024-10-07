@@ -56,7 +56,15 @@ def install_rez(
         str(target_dir),
     ]
     LOGGER.debug(f"subprocess.run({rez_command})")
-    subprocess.run(rez_command, check=True)
+    result = subprocess.run(
+        rez_command,
+        check=True,
+        capture_output=True,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    LOGGER.debug(f"subprocess[stdout]={result.stdout}")
+    LOGGER.debug(f"subprocess[stderr]={result.stderr}")
     shutil.rmtree(rez_tmp_dir)
     if OS.is_windows():
         return target_dir / "Scripts" / "rez" / "rez.exe"
