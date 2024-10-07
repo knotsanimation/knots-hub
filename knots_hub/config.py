@@ -75,8 +75,10 @@ class HubConfig:
         default_factory=list,
         metadata={
             "documentation": (
-                "Filesystem path to an existing json file used to specify which "
+                "Filesystem path to one or multiple existing json file used to specify which "
                 "external program to install with which version."
+                "If specified from an environment variable the list of paths is"
+                "separated by the system path separator character."
             ),
             "environ": Environ.VENDOR_INSTALLER_CONFIG_PATHS,
             "environ_cast": _cast_path_list,
