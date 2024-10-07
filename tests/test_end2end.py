@@ -114,17 +114,6 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     filesystem = knots_hub.HubLocalFilesystem()
     assert filesystem.root_dir == data_root_dir
 
-    def _check_shortcut():
-        _src_shortcut_path = knots_hub.installer.create_exe_shortcut(
-            filesystem.shortcut_dir, ExecvPatcher.exe, dry_run=True
-        )
-        assert _src_shortcut_path.exists()
-        if knots_hub.OS.is_windows():
-            # XXX: windows lnk store the link in ascii
-            local_exe = knots_hub.installer.get_hub_local_executable(filesystem)
-            assert local_exe
-            assert bytes(local_exe) in _src_shortcut_path.read_bytes()
-
     # check the install system
 
     argv = ["--log-environ"]
@@ -133,7 +122,6 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
 
     expected_local_exe = install_dir / exe_name
     assert expected_local_exe.exists()
-    _check_shortcut()
     assert ExecvPatcher.called is True
     assert ExecvPatcher.exe == expected_local_exe
 

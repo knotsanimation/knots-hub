@@ -146,11 +146,6 @@ class BaseParser:
                         installed_version=installer.version,
                         hubrecord_path=self._filesystem.hubinstall_record_path,
                     )
-                shortcut = knots_hub.installer.create_exe_shortcut(
-                    shortcut_dir=self._filesystem.shortcut_dir,
-                    exe_path=exe_path,
-                )
-                LOGGER.debug(f"updated shortcut '{shortcut}'")
                 # we restart to local hub we just installed
                 return sys.exit(self._restart_hub(exe=str(exe_path)))
 

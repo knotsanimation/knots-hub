@@ -101,14 +101,11 @@ class HubLocalFilesystem:
         self._root_dir: Path = root_dir or _DEFAULT_ROOT_DIR
         self._hubrecord_path: Path = self._root_dir / ".hubinstall"
         self._log_path: Path = self._root_dir / "hub.log"
-        self._shortcut_dir: Path = self._root_dir
 
     def initialize(self):
         if not self._root_dir.exists():
             LOGGER.debug(f"mkdir('{self._root_dir}')")
             self._root_dir.mkdir()
-
-        self.shortcut_dir.mkdir(exist_ok=True)
 
     @property
     def root_dir(self) -> Path:
@@ -132,13 +129,6 @@ class HubLocalFilesystem:
         Filesystem path to a file that may not exist yet. Used for storing python logs.
         """
         return self._log_path
-
-    @property
-    def shortcut_dir(self) -> Path:
-        """
-        Filesystem path to a directory that exists.
-        """
-        return self._shortcut_dir
 
     @property
     def is_hub_installed(self) -> bool:
