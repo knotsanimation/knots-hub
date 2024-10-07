@@ -364,12 +364,17 @@ class AboutParser(BaseParser):
 
     def execute(self):
         super().execute()
-        print(f"{knots_hub.__name__} v{knots_hub.__version__}")
-        print(
-            f"interpreter '{knots_hub.constants.INTERPRETER_PATH}' (frozen={knots_hub.constants.IS_APP_FROZEN})"
-        )
-        configstr = json.dumps(self._config.as_dict(), indent=4, default=str)
-        print(f"config={configstr}")
+        print(f"[{knots_hub.__name__} v{knots_hub.__version__}]")
+        aboutdict = {}
+        aboutdict["interpreter"] = knots_hub.constants.INTERPRETER_PATH
+        aboutdict["frozen"] = knots_hub.constants.IS_APP_FROZEN
+        aboutdict.update(self._config.as_dict())
+        aboutdict["local_data_dir"] = self._filesystem.root_dir
+        aboutdict["local_log_path"] = self._filesystem.log_path
+
+        maxlen = max([len(k) for k in aboutdict.keys()])
+        for k, v in aboutdict.items():
+            print(f"| {k:>{maxlen}} | {json.dumps(v, indent=4, default=str)}")
 
         if self.open_install_dir:
             path = self._config.local_install_path
