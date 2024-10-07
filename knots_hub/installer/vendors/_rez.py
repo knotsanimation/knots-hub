@@ -107,7 +107,7 @@ class RezVendorInstaller(BaseVendorInstaller):
         rez_dir = self.install_dir / "rez"
         rez_dir.mkdir()
 
-        LOGGER.info(f"installing rez-{self.version}")
+        LOGGER.info(f"installing rez-{self.version()}")
         with timeit("rez installation took ", LOGGER.info):
             rez_exe = install_rez(
                 rez_version=self.rez_version,
