@@ -81,8 +81,10 @@ def get_paths_to_uninstall(filesystem: HubLocalFilesystem) -> list[Path]:
     hubrecord_path = filesystem.hubinstall_record_path
     hubrecord = HubInstallRecord.read_from_disk(hubrecord_path)
     paths = [hubrecord.installed_path] + [filesystem.root_dir]
+    vendor_record_paths = hubrecord.vendors_record_paths
+    vendor_record_paths = vendor_record_paths.values() if vendor_record_paths else []
 
-    for vendorrecord_path in hubrecord.vendors_record_paths.values():
+    for vendorrecord_path in vendor_record_paths:
         vendorrecord = VendorInstallRecord.read_from_disk(vendorrecord_path)
         paths += [vendorrecord.installed_path] + vendorrecord.extra_paths
 
