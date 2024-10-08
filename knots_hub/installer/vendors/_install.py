@@ -1,6 +1,7 @@
 import logging
 import time
 from pathlib import Path
+from typing import Optional
 
 from ._base import BaseVendorInstaller
 from knots_hub.filesystem import rmtree
@@ -39,7 +40,7 @@ def install_vendor(
             filesystem path to a file that may exist and should record the
             last and future vendor installation configuration.
     """
-    record_file = None
+    record_file: Optional[VendorInstallRecord] = None
     if record_path.exists():
         record_file = VendorInstallRecord.read_from_disk(record_path)
 
@@ -53,8 +54,11 @@ def install_vendor(
     try:
         vendor.install()
     except:
-        LOGGER.debug("upcoming vendor install error, removing potential files created.")
-        uninstall_vendor(record_file)
+        if record_file:
+            LOGGER.debug(
+                "upcoming vendor install error, removing potential files created."
+            )
+            uninstall_vendor(record_file)
         raise
 
     record_file = VendorInstallRecord(
