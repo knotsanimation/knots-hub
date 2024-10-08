@@ -168,7 +168,7 @@ class BaseParser:
 
         # install or update vendor programs
 
-        vendors2install = {}
+        vendors2install: dict[str, knots_hub.installer.BaseVendorInstaller] = {}
         vendor_config_paths = self._config.vendor_installer_config_paths
         for vendor_path in vendor_config_paths:
             if not vendor_path.exists():
@@ -211,10 +211,19 @@ class BaseParser:
                 if not vendor_record_path:
                     vendor_record_path = vendor.install_record_path
 
-                installed = knots_hub.installer.install_vendor(
-                    vendor=vendor,
-                    record_path=vendor_record_path,
-                )
+                try:
+                    installed = knots_hub.installer.install_vendor(
+                        vendor=vendor,
+                        record_path=vendor_record_path,
+                    )
+                except:
+                    # TODO should we uninstall if the vendor install fails ?
+                    LOGGER.warning(
+                        f"failed to install vendor '{vendor_name}'; "
+                        f"you may need to uninstall knots-hub and restart it to trigger a fresh install."
+                    )
+                    raise
+
                 if installed:
                     LOGGER.info(f"installed vendor '{vendor_name}'")
                 vendors_record_paths[vendor_name] = vendor_record_path
