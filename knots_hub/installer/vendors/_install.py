@@ -49,7 +49,13 @@ def install_vendor(
 
     if record_file:
         uninstall_vendor(record_file)
-    vendor.install()
+
+    try:
+        vendor.install()
+    except:
+        LOGGER.debug("upcoming vendor install error, removing potential files created.")
+        uninstall_vendor(record_file)
+        raise
 
     record_file = VendorInstallRecord(
         name=vendor.name(),

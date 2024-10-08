@@ -217,7 +217,6 @@ class BaseParser:
                         record_path=vendor_record_path,
                     )
                 except:
-                    # TODO should we uninstall if the vendor install fails ?
                     LOGGER.warning(
                         f"failed to install vendor '{vendor_name}'; "
                         f"you may need to uninstall knots-hub and restart it to trigger a fresh install."
