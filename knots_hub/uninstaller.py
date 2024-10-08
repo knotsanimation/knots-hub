@@ -32,10 +32,15 @@ def uninstall_paths(paths: list[Path]):
 
     if OS.is_windows():
         script_path = uninstall_dir / "uninstall.bat"
-        content = [
-            f'{"RMDIR" if path.is_dir() else "DEL"} /S /Q "{path}"' for path in paths
-        ]
+        content = ["@echo off"]
+        for path in paths:
+            content += [
+                f"echo ⨂ removing '{path}' ...",
+                f'{"RMDIR" if path.is_dir() else "DEL"} /S /Q "{path}"',
+                f"echo   ⨽ removed !",
+            ]
         content += [
+            "echo ⨂ removing uninstalling script",
             f'start /b "" cmd /C RMDIR /S /Q "{uninstall_dir}"',
         ]
         script_path.write_text("\n".join(content), encoding="utf-8")
@@ -44,7 +49,13 @@ def uninstall_paths(paths: list[Path]):
     else:
         script_path = uninstall_dir / "uninstall.sh"
         bash_path = shutil.which("bash")
-        content = [f'rm -rf "{path}"' for path in paths]
+        content = []
+        for path in paths:
+            content += [
+                f"echo ⨂ removing '{path}' ...",
+                f'rm -rf "{path}"',
+                f"echo   ⨽ removed !",
+            ]
         script_path.write_text("\n".join(content), encoding="utf-8")
         exe = str(bash_path)
         # TODO: not sure we need the prefix
