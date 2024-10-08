@@ -60,7 +60,6 @@ def install_rez(
         rez_command,
         check=True,
         capture_output=True,
-        stderr=subprocess.STDOUT,
         text=True,
     )
     LOGGER.debug(f"subprocess[stdout]={result.stdout}")
