@@ -2,6 +2,7 @@ import dataclasses
 import logging
 import shutil
 import subprocess
+import textwrap
 from pathlib import Path
 
 from pythonning.benchmark import timeit
@@ -13,6 +14,7 @@ from knots_hub import OS
 from knots_hub import serializelib
 from ._base import BaseVendorInstaller
 from ._python import install_python
+from ..._utils import format_subprocess_result
 
 LOGGER = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ def install_rez(
         str(rez_installer_path),
         str(target_dir),
     ]
+    LOGGER.info(f"installing rez to '{target_dir}'")
     LOGGER.debug(f"subprocess.run({rez_command})")
     result = subprocess.run(
         rez_command,
@@ -62,8 +65,7 @@ def install_rez(
         capture_output=True,
         text=True,
     )
-    LOGGER.debug(f"subprocess[stdout]={result.stdout}")
-    LOGGER.debug(f"subprocess[stderr]={result.stderr}")
+    LOGGER.debug(format_subprocess_result(result))
     shutil.rmtree(rez_tmp_dir)
     if OS.is_windows():
         return target_dir / "Scripts" / "rez" / "rez.exe"

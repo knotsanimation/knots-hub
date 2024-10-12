@@ -1,5 +1,8 @@
 import contextlib
 import os.path
+import subprocess
+import textwrap
+from pathlib import Path
 
 
 def expand_envvars(src_str: str) -> str:
@@ -33,3 +36,32 @@ def backup_environ(clear=True):
     finally:
         os.environ.clear()
         os.environ.update(backup)
+
+
+def format_subprocess_result(result: subprocess.CompletedProcess) -> str:
+    """
+    Create a human-readable string detailing the execution of a completed subprocess.
+
+    As verbose as the subprocess was.
+    """
+    args = result.args
+    if isinstance(args, (str, Path)):
+        args = str(args)
+    else:
+        args = " ".join(args)
+
+    stdout = result.stdout
+    if isinstance(stdout, bytes):
+        stdout = stdout.decode("utf-8")
+    stdout = textwrap.indent(stdout, prefix="# ", predicate=lambda line: True)
+
+    stderr = result.stderr
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode("utf-8")
+    stderr = textwrap.indent(stderr, prefix="# ", predicate=lambda line: True)
+
+    message = f"completed process '{args}' with exit code {result.returncode}\n"
+    message += f"======[stdout]======:\n{stdout}"
+    message += f"======[stderr]======:\n{stderr}"
+    message += f"====== end ======"
+    return message

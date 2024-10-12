@@ -8,6 +8,7 @@ from pythonning.web import download_file
 from pythonning.filesystem import move_directory_content
 
 from knots_hub import OS
+from knots_hub._utils import format_subprocess_result
 
 LOGGER = logging.getLogger(__name__)
 NUGET_URL = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
@@ -40,7 +41,8 @@ def _install_python_windows(
     ]
     LOGGER.debug(f"downloading python-{python_version} to {nugest_install_dir}")
     LOGGER.debug(f"subprocess.run({nuget_command})")
-    subprocess.run(nuget_command, check=True)
+    result = subprocess.run(nuget_command, check=True, capture_output=True)
+    LOGGER.debug(format_subprocess_result(result))
 
     nuget_path.unlink()
 
