@@ -35,12 +35,12 @@ def uninstall_paths(paths: list[Path]):
         content = ["@echo off"]
         for path in paths:
             content += [
-                f"echo ⨂ removing '{path}' ...",
+                f"echo - removing '{path}' ...",
                 f'{"RMDIR" if path.is_dir() else "DEL"} /S /Q "{path}"',
-                f"echo   ⨽ removed !",
+                f"echo   ^ removed !",
             ]
         content += [
-            "echo ⨂ removing uninstalling script",
+            "echo - removing uninstalling script",
             f'start /b "" cmd /C RMDIR /S /Q "{uninstall_dir}"',
         ]
         script_path.write_text("\n".join(content), encoding="utf-8")
