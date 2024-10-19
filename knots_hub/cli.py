@@ -118,6 +118,15 @@ class BaseParser:
         local_install_path = self._config.local_install_path
         is_runtime_local = is_runtime_from_local_install(local_install_path)
 
+        # this code is for testing purpose
+        force_local = os.getenv(
+            knots_hub.constants.Environ.FORCE_CONSIDER_RUNTIME_LOCAL, None
+        )
+        # we assume the first restart is always
+        # to the local interpreter (which is the case for now)
+        if force_local and self._restarted > 0:
+            is_runtime_local = True
+
         # we restart to the local install for performance consideration.
         # And we force to start by the remote as it's always the latest version,
         # while local may be an older version which will have issue reading more

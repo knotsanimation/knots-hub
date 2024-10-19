@@ -24,12 +24,26 @@ you edit a source file (doesn't work for autodoc and source code).
 
 ## tests
 
-Running the unittests.
+### running the unittests
 
 - make sure you have the extra `test` dependencies installed 
 - ```shell
   python -m pytest ./tests  
   ```
+
+### testing the app interface
+
+As it was packaged and deployed. The session is created in a temporary
+directory that will be deleted at the end of the script.
+
+- use the `./tests/scripts/knotshub_tester.py` script
+
+You can pass "blocks" of arguments separated by a pipe (`|`), allowing
+to call mutiple command in the same session.
+
+```shell
+python ./tests/scripts/knotshub_tester.py knots_hub --debug | knots_hub kloch list
+```
 
 ## developing
 

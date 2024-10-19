@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from knots_hub import OS
+from knots_hub import Environ
 from knots_hub.constants import EXECUTABLE_NAME
 from knots_hub.constants import EXECUTABLE_NAME_REGEX
 from knots_hub.constants import INTERPRETER_PATH
@@ -108,6 +109,10 @@ def get_expected_hub_executable(directory: Path) -> Path:
 
 
 def _default_root_dir():
+    fromenv = os.getenv(Environ.RUNTIME_STORAGE_ROOT, None)
+    if fromenv:
+        return Path(fromenv)
+
     if OS.is_windows():
         root = Path(os.environ["LOCALAPPDATA"])
         return root / "knots-hub.data"

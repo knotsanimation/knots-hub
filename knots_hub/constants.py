@@ -39,6 +39,20 @@ class Environ:
     the server or locally.
     """
 
+    RUNTIME_STORAGE_ROOT = f"{_ENVPREFIX}_RUNTIME_STORAGE_PATH"
+    """
+    Filesystem path to a directory that may not exists (but whose parent must).
+    
+    Intended for testing purpose as knots-hub already provides a sensible default for actual users.
+    """
+
+    FORCE_CONSIDER_RUNTIME_LOCAL = f"{_ENVPREFIX}_FORCE_CONSIDER_RUNTIME_LOCAL"
+    """
+    Any non-empty value to force 'is_runtime_from_local_install' to return True.
+    
+    Intended for testing purpose only.
+    """
+
 
 class OS:
     """
