@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2024-10-19
+
+### added
+
+- wrapper script to more easily the app in deploy condition for developers
+
+### changed
+
+- restarting system: windows cannot fully restart a process so we now launch
+  a child process to the local executable instead of restarting it.
+- better formatting of the logs emitted by a child process when installing
+
+### fixed
+
+- error when no vendor record file specified
+- remove special character in uninstall script
+
 ## [0.11.1] - 2024-10-08
 
 ### fixed
