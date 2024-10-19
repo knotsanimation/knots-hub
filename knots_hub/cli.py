@@ -3,6 +3,7 @@ import argparse
 import json
 import logging
 import os
+import subprocess
 import sys
 import webbrowser
 from typing import Type
@@ -116,6 +117,11 @@ class BaseParser:
 
         local_install_path = self._config.local_install_path
         is_runtime_local = is_runtime_from_local_install(local_install_path)
+
+        # we restart to the local install for performance consideration.
+        # And we force to start by the remote as it's always the latest version,
+        # while local may be an older version which will have issue reading more
+        # up-to date configs and similar.
 
         if not is_runtime_local:
 
@@ -285,11 +291,17 @@ class BaseParser:
             restarted_amount=self._restarted,
         )
 
-        LOGGER.info(f"restarting hub '{exe}' ...")
-        # safety mentioned in the doc
-        sys.stdout.flush()
-        LOGGER.debug(f"os.execv({exe},{argv})")
-        os.execv(exe, argv)
+        command = [exe] + argv[1:]
+
+        # this is an undocumented env var only used for internal testing
+        asshell: bool = bool(os.getenv("KNOTS_HUB_RESTART_AS_SHELL", False))
+
+        LOGGER.info(f"restarting hub to '{exe}' (asshell={asshell}) ...")
+        LOGGER.debug(f"subprocess.run({command})")
+        # XXX: we use subprocess instead of os.execv because the implementation on Windows
+        #   is not a real restart https://github.com/python/cpython/issues/63323.
+        result = subprocess.run(command, shell=asshell)
+        sys.exit(result.returncode)
 
 
 class _Parser(BaseParser):

@@ -77,7 +77,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     with vendor_config_path.open("w") as file:
         json.dump(vendor_config, file, indent=4)
 
-    class ExecvPatcher:
+    class SubprocessPatcher:
 
         exe: Path = None
         args: List[str] = None
@@ -90,16 +90,16 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
             cls.called = False
 
         @classmethod
-        def _patch_os_execv(cls, exe, args):
-            exe = Path(exe)
+        def _patch(cls, command, *args, **kwargs):
+            exe = Path(command[0])
             cls.called = True
             cls.exe = exe
-            cls.args = args
+            cls.args = command[1:]
 
     def _patch_sys_argv():
         return sys.argv.copy() + ["UNWANTEDARG"]
 
-    monkeypatch.setattr(os, "execv", ExecvPatcher._patch_os_execv)
+    monkeypatch.setattr(subprocess, "run", SubprocessPatcher._patch)
     monkeypatch.setattr(sys, "argv", _patch_sys_argv)
 
     monkeypatch.setenv(knots_hub.Environ.USER_INSTALL_PATH, str(install_dir))
@@ -122,8 +122,8 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
 
     expected_local_exe = install_dir / exe_name
     assert expected_local_exe.exists()
-    assert ExecvPatcher.called is True
-    assert ExecvPatcher.exe == expected_local_exe
+    assert SubprocessPatcher.called is True
+    assert SubprocessPatcher.exe == expected_local_exe
 
     # check the vendor install system
 
@@ -164,12 +164,12 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
         _patched_is_runtime_from_local_install,
     )
 
-    argv = ExecvPatcher.args.copy()[1:]
-    ExecvPatcher.clear()
+    argv = SubprocessPatcher.args.copy()[1:]
+    SubprocessPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert ExecvPatcher.called is False
+    assert SubprocessPatcher.called is False
     assert InstallRezPatcher.called is True
     assert InstallPythonPatcher.called is True
     assert vendor_install_dir.exists()
@@ -177,16 +177,16 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
 
     # check no install
 
-    ExecvPatcher.clear()
+    SubprocessPatcher.clear()
     InstallRezPatcher.called = False
     InstallPythonPatcher.called = False
 
     argv = ["--restarted", "1"]
-    ExecvPatcher.clear()
+    SubprocessPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert ExecvPatcher.called is False
+    assert SubprocessPatcher.called is False
     assert InstallRezPatcher.called is False
     assert InstallPythonPatcher.called is False
 
@@ -206,16 +206,16 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     with vendor_config_path.open("w") as file:
         json.dump(vendor_config, file, indent=4)
 
-    ExecvPatcher.clear()
+    SubprocessPatcher.clear()
     InstallRezPatcher.called = False
     InstallPythonPatcher.called = False
 
     argv = ["--restarted", "1"]
-    ExecvPatcher.clear()
+    SubprocessPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 
-    assert ExecvPatcher.called is False
+    assert SubprocessPatcher.called is False
     assert InstallRezPatcher.called is True
     assert InstallPythonPatcher.called is True
 
@@ -228,7 +228,8 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     # check uninstall
 
     def _patch_execv(exe_: str, argv_: List[str]):
-        subprocess.run([exe_] + argv_[1:], check=True)
+        # we patch subprocess.run above so use a different function
+        subprocess.check_call([exe_] + argv_[1:])
 
     monkeypatch.setattr(os, "execv", _patch_execv)
 
