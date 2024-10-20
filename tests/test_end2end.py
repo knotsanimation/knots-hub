@@ -95,6 +95,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
             cls.called = True
             cls.exe = exe
             cls.args = command[1:]
+            return subprocess.CompletedProcess(command, 0)
 
     def _patch_sys_argv():
         return sys.argv.copy() + ["UNWANTEDARG"]
@@ -165,6 +166,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     )
 
     argv = SubprocessPatcher.args.copy()[1:]
+    monkeypatch.setenv(knots_hub.Environ.IS_RESTARTED, "1")
     SubprocessPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
@@ -181,7 +183,8 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     InstallRezPatcher.called = False
     InstallPythonPatcher.called = False
 
-    argv = ["--restarted", "1"]
+    argv = []
+    monkeypatch.setenv(knots_hub.constants.Environ.IS_RESTARTED, "1")
     SubprocessPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
@@ -210,7 +213,8 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     InstallRezPatcher.called = False
     InstallPythonPatcher.called = False
 
-    argv = ["--restarted", "1"]
+    argv = []
+    monkeypatch.setenv(knots_hub.constants.Environ.IS_RESTARTED, "1")
     SubprocessPatcher.clear()
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
@@ -221,7 +225,8 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
 
     # check about subcommand
 
-    argv = ["about", "--restarted", "1"]
+    argv = ["about"]
+    monkeypatch.setenv(knots_hub.constants.Environ.IS_RESTARTED, "1")
     with pytest.raises(SystemExit):
         knots_hub.__main__.main(argv=argv)
 

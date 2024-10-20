@@ -13,6 +13,7 @@ from pythonning.benchmark import timeit
 
 import knots_hub
 import knots_hub.installer
+from knots_hub.constants import Environ
 from knots_hub import HubConfig
 from knots_hub import HubLocalFilesystem
 from knots_hub.filesystem import is_runtime_from_local_install
@@ -26,29 +27,6 @@ from knots_hub.uninstaller import uninstall_hub_only
 from knots_hub.uninstaller import uninstall_paths
 
 LOGGER = logging.getLogger(__name__)
-
-
-def get_restart_args(
-    current_argv: list[str],
-    restarted_amount: int = 0,
-) -> list[str]:
-    """
-    Get the args to pass to ``os.exec*``
-    """
-    newargv = ["knots_hub"]  # program name expected by os.exec*
-
-    argvcp = current_argv.copy()
-
-    if "--restarted__" in argvcp:
-        index = argvcp.index("--restarted__")
-        # remove the arg and its value
-        argvcp.pop(index)
-        argvcp.pop(index)
-
-    newargv += argvcp
-    newargv += ["--restarted__", str(restarted_amount + 1)]
-
-    return newargv
 
 
 class BaseParser:
@@ -96,20 +74,13 @@ class BaseParser:
         """
         return self._args.no_coloring
 
-    @property
-    def _restarted(self) -> int:
-        """
-        True if the app has been call has a restarted session.
-
-        Only intended to be used internally.
-        """
-        return self._args._restarted
-
     @abc.abstractmethod
     def execute(self):
         """
         Arbitrary code that must be executed when the user ask this command.
         """
+        restarted: int = int(os.getenv(Environ.IS_RESTARTED, 0))
+
         if self.log_environ:
             LOGGER.debug(
                 "environ=" + json.dumps(dict(os.environ), indent=4, sort_keys=True)
@@ -119,12 +90,10 @@ class BaseParser:
         is_runtime_local = is_runtime_from_local_install(local_install_path)
 
         # this code is for testing purpose
-        force_local = os.getenv(
-            knots_hub.constants.Environ.FORCE_CONSIDER_RUNTIME_LOCAL, None
-        )
+        force_local = os.getenv(Environ.FORCE_CONSIDER_RUNTIME_LOCAL, None)
         # we assume the first restart is always
         # to the local interpreter (which is the case for now)
-        if force_local and self._restarted > 0:
+        if force_local and restarted > 0:
             is_runtime_local = True
 
         # we restart to the local install for performance consideration.
@@ -168,11 +137,7 @@ class BaseParser:
             if exe_path:
                 return sys.exit(self._restart_hub(exe=str(exe_path)))
 
-        elif (
-            is_runtime_local
-            and not self._restarted
-            and not self._config.skip_local_check
-        ):
+        elif is_runtime_local and not restarted and not self._config.skip_local_check:
             LOGGER.error(
                 "Current application seems to be started directly from the local install."
                 "You need to launch it from the server first."
@@ -269,13 +234,6 @@ class BaseParser:
             action="store_true",
             help=cls.log_environ.__doc__,
         )
-        parser.add_argument(
-            "--restarted__",
-            dest="_restarted",
-            default=0,
-            type=int,
-            help=argparse.SUPPRESS,
-        )
         parser.set_defaults(func=cls)
 
     def _restart_hub(self, exe: str):
@@ -285,22 +243,22 @@ class BaseParser:
         Args:
             exe: filesystem path to an existing hub executable
         """
+        restarted: int = int(os.getenv(Environ.IS_RESTARTED, 0))
+
         # safety to prevent an unlimited loop of restart.
-        # not that it might happen but we never know
-        if self._restarted > 3:
+        # (happened during development on tricky refactoring)
+        if restarted > 3:
             LOGGER.error(
                 "Prevented a fourth restart leading to a probable infinite recursion."
                 "Investigate the logs to find the cause."
             )
             sys.exit(-1)
 
+        restarted += 1
         current_argv = self._original_argv.copy()
-        argv = get_restart_args(
-            current_argv=current_argv,
-            restarted_amount=self._restarted,
-        )
-
-        command = [exe] + argv[1:]
+        command = [exe] + current_argv
+        environ = os.environ.copy()
+        environ[Environ.IS_RESTARTED] = str(restarted)
 
         # this is an undocumented env var only used for internal testing
         asshell: bool = bool(os.getenv("KNOTS_HUB_RESTART_AS_SHELL", False))
@@ -309,7 +267,7 @@ class BaseParser:
         LOGGER.debug(f"subprocess.run({command})")
         # XXX: we use subprocess instead of os.execv because the implementation on Windows
         #   is not a real restart https://github.com/python/cpython/issues/63323.
-        result = subprocess.run(command, shell=asshell)
+        result = subprocess.run(command, shell=asshell, env=environ)
         sys.exit(result.returncode)
 
 

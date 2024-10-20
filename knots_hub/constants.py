@@ -53,6 +53,13 @@ class Environ:
     Intended for testing purpose only.
     """
 
+    IS_RESTARTED = f"{_ENVPREFIX}__IS_RESTARTED__"
+    """
+    A number indicating the number of time the runtime has been restarted.
+    
+    For private use only.
+    """
+
 
 class OS:
     """
