@@ -216,7 +216,7 @@ class BaseParser:
                 continue
 
         if vendors2install:
-            LOGGER.debug(f"found {len(vendors2install)} vendor installers.")
+            LOGGER.debug(f"got {len(vendors2install)} vendor to check for install.")
 
             vendors_record_paths = {}
 
@@ -242,7 +242,7 @@ class BaseParser:
                     LOGGER.info(f"installed vendor '{vendor_name}'")
                 vendors_record_paths[vendor_name] = vendor_record_path
 
-            LOGGER.info(
+            LOGGER.debug(
                 f"updating hub records '{hubrecord_path}' with installed vendors"
             )
             HubInstallRecord(vendors_record_paths=vendors_record_paths).update_disk(
