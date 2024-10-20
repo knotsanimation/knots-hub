@@ -48,8 +48,14 @@ def install_vendor(
         # already up-to-date
         return False
 
+    updating = record_file is not None
     if record_file:
         uninstall_vendor(record_file)
+
+    if updating:
+        LOGGER.debug(f"updating existing vendor '{vendor.name()}'")
+    else:
+        LOGGER.debug(f"installing new vendor '{vendor.name()}'")
 
     try:
         vendor.install()
