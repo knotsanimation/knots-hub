@@ -6,12 +6,14 @@ from typing import Type
 from ._base import BaseVendorInstaller
 from ._base import VendorNameError
 from ._rez import RezVendorInstaller
+from ._knots import KnotsVendorInstaller
 from knots_hub import serializelib
 
 LOGGER = logging.getLogger(__name__)
 
 SUPPORTED_VENDORS: dict[str, Type[BaseVendorInstaller]] = {
     RezVendorInstaller.name(): RezVendorInstaller,
+    KnotsVendorInstaller.name(): KnotsVendorInstaller,
 }
 """
 A mapping of vendor software name: associated installer 

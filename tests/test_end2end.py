@@ -64,6 +64,7 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
     vendor_root = tmp_path / ".vendorroot"
     vendor_install_dir = tmp_path / "vendor"
     rez_install_dir = vendor_install_dir / "rez"
+    knots_install_dir = vendor_install_dir / "knots"
 
     vendor_config = {
         "rez": {
@@ -71,7 +72,11 @@ def test__main__full(monkeypatch, data_dir, tmp_path, caplog):
             "dirs_to_make": [str(vendor_root), str(vendor_install_dir)],
             "python_version": "3.10.11",
             "rez_version": "2.114.1",
-        }
+        },
+        "knots": {
+            "install_dir": str(knots_install_dir),
+            "dirs_to_make": [],
+        },
     }
     vendor_config_path = tmp_path / "vendor-config.json"
     with vendor_config_path.open("w") as file:
