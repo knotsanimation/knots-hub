@@ -75,6 +75,10 @@ def install_rez(
 
 @dataclasses.dataclass
 class RezVendorInstaller(BaseVendorInstaller):
+    """
+    Install rez at the given location. See `<https://rez.readthedocs.io/en/stable/>`_
+    """
+
     python_version: str = serializelib.StrField(
         doc="a full valid python version to install rez with"
     )
@@ -115,3 +119,8 @@ class RezVendorInstaller(BaseVendorInstaller):
                 target_dir=rez_dir,
                 python_executable=python_exe,
             )
+
+    @classmethod
+    def get_documentation(cls) -> list[str]:
+        doc = super().get_documentation()
+        return [cls.__doc__, ""] + doc
