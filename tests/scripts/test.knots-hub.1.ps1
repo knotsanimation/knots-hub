@@ -1,0 +1,1 @@
+python $PSScriptRoot\knotshub_tester.py --debug `| kloch plugins
