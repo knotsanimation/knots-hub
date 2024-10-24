@@ -11,6 +11,8 @@ import knots_hub.__main__
 
 LOGGER = logging.getLogger(__name__)
 
+THISDIR = Path(__file__).parent
+
 
 def mk_vendor_config(target_path: Path):
     content = {
@@ -19,7 +21,11 @@ def mk_vendor_config(target_path: Path):
             "dirs_to_make": ["$KHUB_VENDOR_INSTALL_ROOT"],
             "python_version": "3.10.11",
             "rez_version": "2.113.0",
-        }
+        },
+        "knots": {
+            "install_dir": "$KHUB_KNOTS_PATH",
+            "dirs_to_make": [],
+        },
     }
     print(f"creating vendor config '{target_path}'")
     with target_path.open("w") as file:
@@ -76,8 +82,10 @@ def main(tmpdir: Path):
 
     vendor_install_path = tmpdir / "vendorinstall"
     vendor_rez_path = vendor_install_path / "rez"
-
     runtime_path = tmpdir / "runtime"
+    knots_path = tmpdir / "knots"
+
+    resources_path = THISDIR / "resources"
 
     khubenv = knots_hub.constants.Environ
     environ = os.environ.copy()
@@ -90,7 +98,10 @@ def main(tmpdir: Path):
             khubenv.FORCE_CONSIDER_RUNTIME_LOCAL: "1",
             "KHUB_VENDOR_INSTALL_ROOT": str(vendor_install_path),
             "KHUB_VENDOR_REZ_ROOT": str(vendor_rez_path),
+            "KHUB_RESOURCES_PATH": str(resources_path),
+            "KHUB_KNOTS_PATH": str(knots_path),
             "KNOTS_HUB_RESTART_AS_SHELL": "1",
+            "KLOCH_CONFIG_PROFILE_ROOTS": str(resources_path / "profiles"),
         }
     )
 

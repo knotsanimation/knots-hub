@@ -1,0 +1,15 @@
+__magic__: kloch_profile:3
+identifier: tknots
+version: 0.1.0
+launchers:
+  .base:
+    environ:
+      KNOTS_LOCAL_REZ_INSTALL_PATH: $KHUB_VENDOR_REZ_ROOT\rez
+      KNOTS_LOCAL_REZ_SCRIPTS_PATH: $KNOTS_LOCAL_REZ_INSTALL_PATH\Scripts\rez
+      REZ_CONFIG_FILE: $KHUB_RESOURCES_PATH\rez-config.yml
+      KNOTS_PROD: ""
+  rezenv:
+    environ:
+      PATH:
+        - $PATH
+        - $KNOTS_LOCAL_REZ_SCRIPTS_PATH

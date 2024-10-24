@@ -1,1 +1,1 @@
-python $PSScriptRoot\knotshub_tester.py --debug `| kloch plugins
+python $PSScriptRoot\knotshub_tester.py --debug `| kloch plugins `| kloch list `| kloch run tknots --debug -- echo "hello !"
