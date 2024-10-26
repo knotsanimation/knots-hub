@@ -340,7 +340,7 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "kloch"
-version = "0.10.0"
+version = "0.11.2"
 description = "Environment Manager CLI wrapping package managers calls as serialized config file"
 optional = false
 python-versions = ">=3.7"
@@ -359,7 +359,7 @@ tests = ["pytest (==7.3.2)", "typing-extensions (<4.8)"]
 type = "git"
 url = "https://github.com/knotsanimation/kloch.git"
 reference = "HEAD"
-resolved_reference = "e046fa78eb1f4fc2675cfe3f4db852a192b103fb"
+resolved_reference = "432354355acdf1a34e0ceb8d847a6cac58e2049a"
 
 [[package]]
 name = "kloch-kiche"
@@ -1095,4 +1095,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9.0"
-content-hash = "f8bb0dd201326f0488762bc280a42c36aa7b44c9b8229db31993b37b407bcadc"
+content-hash = "1a6d62cab01d10319be2c0418abc228a035ce03e6f9cc0612e4a3f5b29a9987b"
