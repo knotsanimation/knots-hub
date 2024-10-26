@@ -66,6 +66,28 @@ class ColoredFormatter(logging.Formatter):
 _DISK_HANDLER_ATTR = "knots_disk_handler"
 
 
+class RotatingFileHandler(logging.handlers.RotatingFileHandler):
+    """
+    Log to files which switch between one another when they go above a maximum size.
+
+    We subclass the python implementation because of Permission Error related to
+    nested subprocesses. Our workaround is to just fully block the rollover
+    until the end of the python session, so it will be handled on the next session.
+    However, this mean the log file will be bigger than the ``maxBytes`` specified.
+    """
+
+    def doRollover(self):
+        try:
+            super().doRollover()
+        except PermissionError:
+            self._block_rollover = True
+
+    def shouldRollover(self, record):
+        if hasattr(self, "_block_rollover"):
+            return False
+        return super().shouldRollover(record)
+
+
 def configure_logging(
     log_level: Union[int, str],
     log_path: Path,
@@ -90,7 +112,7 @@ def configure_logging(
     handler.setFormatter(stream_formatter)
     logging.root.addHandler(handler)
 
-    handler = logging.handlers.RotatingFileHandler(
+    handler = RotatingFileHandler(
         log_path,
         maxBytes=65536,
         # need at least one backup to rotate
