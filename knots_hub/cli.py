@@ -308,7 +308,7 @@ class KlochParser(BaseParser):
             ]
         )
 
-        argv = self._extra_args + (["--debug"] if self.debug else [])
+        argv = self._extra_args.copy()
         LOGGER.debug(f"using {kloch.__name__} v{kloch.__version__}")
         LOGGER.debug(f"kloch.get_cli({argv})")
         cli = kloch.get_cli(argv=argv, config=kloch_config)
