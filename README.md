@@ -20,6 +20,8 @@ local machine to avoid reducing performances.
 The hub is reponsible of installing himself on the user machine, using
 pre-compiled executable provided via a configuration. 
 
+![overview diagram of knots-hub interraction with other software](doc/source/_static/diagram-overview.svg)
+
 ## documentation
 
 Read the documentation: https://knotsanimation.github.io/knots-hub/

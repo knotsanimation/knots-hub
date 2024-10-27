@@ -33,6 +33,17 @@ the local user system up-to-date.
 Be aware that this design force the hub to always be launched from the `server`
 variant. The `local` is only launched by the `server` during a restart.
 
+.. container:: only-dark rounded
+
+   .. image:: _static/diagram-overview.dark.svg
+      :alt: overview diagram of knots-hub interraction with other software
+
+.. container:: only-light rounded
+
+   .. image:: _static/diagram-overview.svg
+      :alt: overview diagram of knots-hub interraction with other software
+
+
 Install system
 ______________
 

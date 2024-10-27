@@ -1,0 +1,17 @@
+img.sidebar-logo {
+    width: 64px;
+    max-width: unset;
+    margin: 5px;
+}
+
+.rounded > * {
+    border-radius: 10px;
+}
+
+/* improve tables look */
+table.docutils {
+    width: 100%;
+}
+table.docutils td, table.docutils th {
+    text-align: left;
+}
