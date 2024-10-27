@@ -42,3 +42,13 @@ _________
 
    import knots_hub
    knots_hub.get_cli(None, None, ["uninstall", "--help"])
+
+
+about
+_____
+
+.. exec_code::
+   :hide_code:
+
+   import knots_hub
+   knots_hub.get_cli(None, None, ["about", "--help"])

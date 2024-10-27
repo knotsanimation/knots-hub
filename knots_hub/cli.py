@@ -398,7 +398,7 @@ class AboutParser(BaseParser):
         parser.add_argument(
             "--open-data-dir",
             action="store_true",
-            help=cls.open_install_dir.__doc__,
+            help=cls.open_data_dir.__doc__,
         )
 
 
@@ -431,13 +431,13 @@ def get_cli(
 
     subparser = subparsers.add_parser(
         "uninstall",
-        description="Uninstall the hub from the user system.",
+        description="Uninstall the hub and its dependencies from the user system.",
     )
     UninstallParser.add_to_parser(subparser)
 
     subparser = subparsers.add_parser(
         "about",
-        description="Meta options about knots hub itself.",
+        description="Display meta informations about knots hub itself.",
     )
     AboutParser.add_to_parser(subparser)
 
