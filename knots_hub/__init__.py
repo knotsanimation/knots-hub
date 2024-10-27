@@ -1,4 +1,4 @@
-__version__ = "0.13.1"  # XXX: keep in sync with pyproject.toml
+__version__ = "0.13.2"  # XXX: keep in sync with pyproject.toml
 __all__ = [
     "constants",
     "Environ",
