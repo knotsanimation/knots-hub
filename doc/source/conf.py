@@ -49,7 +49,7 @@ html_css_files = [
     "extra.css",
 ]
 
-# html_logo = "_static/logo-color.svg"
+html_logo = "_static/logo-color.png"
 
 html_theme_options = {
     # "light_css_variables": {
